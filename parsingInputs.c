@@ -8,7 +8,7 @@ int parseInput(char *user) {
     int i, length = sizeof(commands)/sizeof(commands[0]), found = FALSE;
 
     for(i = 0; i < length; i++) {
-        found = (strncasecmp(user, commands[i], strlen(commands[i])) == 0)? TRUE: FALSE;
+        found = (strcasecmp(user, commands[i]) == 0)? TRUE: FALSE;
         if(found == TRUE)
             return i;
     }

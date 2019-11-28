@@ -33,6 +33,16 @@
 #define BUFF_SIZE 180
 #define TRUE 1
 #define FALSE 0
+#define TR_NAME "TR_NAME"
+#define CONOK "CONOK"
+#defiine CONKO "CONKO"
+#define MSG "MSG"
+#define MSGOK "MSGOK"
+#define BROADCAST "BROADCAST"
+#define SHOW_AUDIOS "SHOW_AUDIOS"
+#define LIST_AUDIOS "LIST_AUDIOS"
+#define AUDIO_RQST "AUDIO_RQST"
+//TODO ACABAR DE COPIAR LAS CONSTANTES
 
 volatile int close_1; // Variable to control the system when a killing signal is received (SIGINT, SIGTERM)
 
@@ -46,10 +56,22 @@ typedef struct  {
     char * final_port;
 } FileData;
 
+
 typedef struct {
-    int id;
-    char * user;
+    char id;
+    char * header;
+    int length;
     char * data;
-} Input;
+} Protocol; //
+
+typedef struct {//TODO
+    int fd_child;
+    int port;
+    char * rcv_msg;
+    char * send_message;
+    char * ip;
+    int fd_client;
+    char * name;
+} Control; //to communicate the parent ant the server thread
 
 #endif //TYPES_H
