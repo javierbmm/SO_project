@@ -26,7 +26,9 @@ void fillProtocol(Protocol *_p, char _id, char * _header, char * _length, char *
 
 }
 void *trNameFunc (Control *c_control) {
-
+    c_control->name = realloc(c_control->name, c_control->rcv_msg->length);
+    strcpy(c_control->name, c_control->rcv_msg->data);
+    msgOKFunc(c_control);
 }
 
 void *conOkFunc (Control *c_control) {
@@ -48,10 +50,17 @@ void *conKOFunc (Control *c_control) {
 ////////
 /* TODO: */
 void *msgFunc (Control *c_control) {
-
+    //sendMsg(c_control);
 }
 void *msgOKFunc (Control *c_control) {
-
+    Protocol *msgOk = newProtocol();
+    header = c_control->rcv_msg->header;
+    data = c_control->rcv_msg->data;
+    id = c_control->rcv_msg->id;
+    fillProtocol(msgOk, id, header, length, data);
+    freeProtocol(c_control->send_msg);
+    c_control->send_msg = msgOk;
+    sendMsg(c_control);
 }
 void *broadcastFunc (Control *c_control) {
 
@@ -67,8 +76,6 @@ void *audioRqstFunc (Control *c_control) {
 }
 void *endConn (Control *c_control){
     c_control->end_conn = TRUE;
-
-
 }
 ////////
 
