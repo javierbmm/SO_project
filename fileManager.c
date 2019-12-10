@@ -27,18 +27,24 @@ int getSizeOfLine(int file, char charLimit) {
 }
 int readUntil(int file, char** word, char limit){
     int wordLength = 0;
+    memset(*word, 0, strlen(*word));
     //char *word = (char*)malloc(0);
     //word = realloc(word, 0);
     char letter[1];
-    while(close_1 == 0 && read(file, letter, 1) > 0){
-        // reading letter by letter (one byte at time) until limit
-        if(letter[0] == limit || letter == '\0')
+    while(close_1 == 0){
+        if(read(file, letter, 1) > 0){
+            printf("[%c]\n",letter[0]);
+            // reading letter by letter (one byte at time) until limit
+            if(letter[0] == limit || letter[0] == '\0') {
+                //printf("|%c|", letter[0]);
+                break;
+            }
+            *word = (char*)realloc(*word, ++wordLength);
+            (*word)[wordLength-1] = letter[0];
+        }else
             break;
-
-        *word = (char*)realloc(*word, ++wordLength);
-        (*word)[wordLength-1] = letter[0];
     }
-    printf("word: %s\n", *word);
+    //printf("word: %s\n", *word);
 
     return wordLength;
 }
@@ -50,12 +56,12 @@ int sreadUntil(char *input, char** word, char limit){
     while(close_1 == 0){
         letter[0] = input[wordLength];
         // reading letter by letter (one byte at time) until limit
-        if(letter[0] == limit || letter == '\0')
+        if(letter[0] == limit || letter[0] == '\n')
             break;
         *word = (char*)realloc(*word, ++wordLength);
         (*word)[wordLength-1] = letter[0];
     }
-    printf("word: %s\n",*word);
+    printf("word: |%s|\n",*word);
     return wordLength;
 }
 int readUntilLimit(int file, char** line, char limit){
@@ -96,7 +102,7 @@ FileData getFileData (const int file) {
         size_of_word = readUntilLimit(file, &word, delimiter) ;
         char *word_cpy = malloc(size_of_word+1);
         strcpy(word_cpy, word);
-
+        printf("-> %s\n",word_cpy);
         switch (i) {
             case 0:
                 data.user_name = word_cpy;
@@ -126,11 +132,18 @@ FileData getFileData (const int file) {
         // Empty-ing the buffer
         memset(word,0,strlen(word));
         word[0] = '\0';
-        free(word_cpy);
+        //free(word_cpy);
     }
 
     free(word);
     //close(f);
 
     return data;
+}
+
+// Print function for simple strings (NO %d %f %s etc)
+void myprint(char* msg){
+    char buffer[strlen(msg)+1];
+    sprintf(buffer, "%s", msg);
+    write(1, buffer, strlen(buffer));
 }

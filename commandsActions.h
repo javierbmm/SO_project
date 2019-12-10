@@ -8,6 +8,10 @@
 #include <string.h>
 #include <stdio.h>
 #include "types.h"
-void getCommand(int i, char* user);
+
+int conn_fd;
+
+void getCommand(int i, char* user, FileData fileData);
+void connectPort(int port, FileData fileData);
 
 #endif //PROJECTF1_1_COMMANDSACTIONS_H

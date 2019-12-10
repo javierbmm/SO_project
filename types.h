@@ -11,6 +11,10 @@
 #include <unistd.h>
 #include <signal.h>
 #include <stdlib.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <pthread.h>
 
 #define SHOWCONNECTIONS_ID "0"
 #define CONNECT_ID "1"
@@ -35,16 +39,19 @@
 #define FALSE 0
 #define TR_NAME "TR_NAME"
 #define CONOK "CONOK"
-#defiine CONKO "CONKO"
+#define CONKO "CONKO"
 #define MSG "MSG"
 #define MSGOK "MSGOK"
 #define BROADCAST "BROADCAST"
 #define SHOW_AUDIOS "SHOW_AUDIOS"
 #define LIST_AUDIOS "LIST_AUDIOS"
 #define AUDIO_RQST "AUDIO_RQST"
+// EXIT
+#define EXIT_MSG ""
 //TODO ACABAR DE COPIAR LAS CONSTANTES
 
 volatile int close_1; // Variable to control the system when a killing signal is received (SIGINT, SIGTERM)
+volatile int break_listener;
 
 typedef struct  {
     char * user_name;
@@ -56,22 +63,23 @@ typedef struct  {
     char * final_port;
 } FileData;
 
-
 typedef struct {
     char id;
     char * header;
-    int length;
+    char * length;
     char * data;
 } Protocol; //
 
 typedef struct {//TODO
-    int fd_child;
-    int port;
-    char * rcv_msg;
-    char * send_message;
-    char * ip;
-    int fd_client;
-    char * name;
-} Control; //to communicate the parent ant the server thread
+    pthread_t fd_child;       // file descriptor for the child-thread
+    int port;           // port assigned to the listener
+    Protocol * rcv_msg;     // message received
+    Protocol * send_msg;// message to send | sent message
+    char * ip;          // ip assigned to the listener
+    int fd_client;      // file descriptor from the user i'm communicating to
+    char * name;        // User name (not from listener)
+    pthread_t *th_id;   // id for this thread
+    int end_conn;       // to notify a disconnection
+} Control; //to communicate the parent and the server thread
 
 #endif //TYPES_H

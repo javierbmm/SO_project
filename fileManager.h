@@ -21,6 +21,7 @@ int sreadUntil(char* input, char** word, char limit); // same as above but for s
 int readUntilLimit(int file, char** line, char limit);
 void skipDelimiter(int file, char delimiter);
 FileData getFileData (const int file);
+void myprint(char* msg);
 
 
 #endif //PROJECTF1_1_FILEMANAGER_H

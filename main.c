@@ -2,6 +2,7 @@
 #include "fileManager.h"
 #include "commandsActions.h"
 #include "parsingInputs.h"
+#include "connections.h"
 
 #include <fcntl.h>
 #include <unistd.h>
@@ -23,7 +24,8 @@ void kctrlc() {
     /* the next command is to change the locking behaviour of system call. My idea is to unblock read() so I can
      * interrupt the program whenever the user press ctrl+c
     */
-    fcntl(0, F_SETFL, fcntl(0, F_GETFL) | O_NONBLOCK); // TODO: check this function because can be dangerous (see the comment above)
+    close(STDIN_FILENO);
+    //fcntl(0, F_SETFL, fcntl(0, F_GETFL) | O_NONBLOCK); // TODO: check this function because can be dangerous (see the comment above)
 }
 int main(int arg, const char* argv[]) {
     fcntl(0, F_SETFL, fcntl(0, F_GETFL) & ~O_NONBLOCK);
@@ -35,7 +37,6 @@ int main(int arg, const char* argv[]) {
     int command, file;
     char buffer[BUFF_SIZE];
 
-    //signal(SIGINT, kctrlc);
     if (arg != 2) {
         write(1, FILENAME_ERROR, strlen(FILENAME_ERROR));
         exit(1);
@@ -51,27 +52,37 @@ int main(int arg, const char* argv[]) {
     }
 
     data = getFileData(file);
+    Control ctrl_server;
+    ctrl_server.th_id = NULL;
+    ctrl_server.port = atoi(data.port); // from parent
+    ctrl_server.ip = data.ip;     // from parent
+    ctrl_server.end_conn = FALSE;
+    ctrl_server.rcv_msg = NULL;
+    ctrl_server.send_msg = NULL;
+
+    pthread_t listener_id;
+    pthread_create(&listener_id, NULL, openServer, (void*)&ctrl_server);
     //user = realloc(user, (BUFF_SIZE)*sizeof(user));
 
     while (close_1 == FALSE) {
         writeUser(data.user_name);
-
         readUntil(STDIN_FILENO, &user,'\n');
         if(close_1 == TRUE)
             break;
         command = parseInput(user);
-        printf("got the command: %d\n", command);
+
         if (command >= 0 && command != 6) {
-            getCommand(command, user);
+            getCommand(command, user, data);
         }
         else if(command == 6){
             break;
         }
-        printf("finished\n");
         // Empty-ing the buffer
         //printf("%ld",sizeof(user));
         //memset(user,0, sizeof(user));
         //user[0] = '\0';
+        printf("finished\n");
+
     }
 
     free(user);
