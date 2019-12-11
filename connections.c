@@ -30,16 +30,16 @@ void *trNameFunc (Control *c_control) {
     strcpy(c_control->name, c_control->rcv_msg->data);
     msgOKFunc(c_control);
 }
-
-void *conOkFunc (Control *c_control) {
-    write(c_control->fd_client, "1", 1);
-    write(c_control->fd_client, "[CONOK]", strlen("[CONOK]"));
-    int length = strlen(c_control->name);
-    char clength[3];
-    sprintf(clength, "%d", length);
-    write(c_control->fd_client, clength, 2); // CAREFUL
-    write(c_control->fd_client, c_control->name, strlen(c_control->name));
-
+void *conOKFunc (Control *c_control) {
+    Protocol *msgOk = newProtocol();
+    char* header = c_control->rcv_msg->header;
+    char* data = c_control->rcv_msg->data;
+    char id = c_control->rcv_msg->id;
+    char * length = c_control->rcv_msg->length;
+    fillProtocol(msgOk, id, header, length, data);
+    freeProtocol(c_control->send_msg);
+    c_control->send_msg = msgOk;
+    sendMsg(c_control);
 }
 void *conKOFunc (Control *c_control) {
     Protocol p_new;
@@ -52,17 +52,7 @@ void *conKOFunc (Control *c_control) {
 void *msgFunc (Control *c_control) {
     //sendMsg(c_control);
 }
-void *msgOKFunc (Control *c_control) {
-    Protocol *msgOk = newProtocol();
-    char* header = c_control->rcv_msg->header;
-    char* data = c_control->rcv_msg->data;
-    char id = c_control->rcv_msg->id;
-    char * length = c_control->rcv_msg->length;
-    fillProtocol(msgOk, id, header, length, data);
-    freeProtocol(c_control->send_msg);
-    c_control->send_msg = msgOk;
-    sendMsg(c_control);
-}
+
 void *broadcastFunc (Control *c_control) {
 
 }
