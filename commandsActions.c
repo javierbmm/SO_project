@@ -18,7 +18,7 @@ void sendtofd(Protocol p, int fd){
     write (fd, p.data, strlen(p.data));
 }
 
-void connectPort(int port, FileData fdata){
+void connectPort(int port){
     int sockfd = 0;
     struct sockaddr_in serv_addr;
 
@@ -32,7 +32,7 @@ void connectPort(int port, FileData fdata){
     memset(&serv_addr, '0', sizeof(serv_addr));
 
     serv_addr.sin_family = AF_INET;
-    serv_addr.sin_addr.s_addr = inet_addr(fdata.ip);
+    serv_addr.sin_addr.s_addr = inet_addr(FILEDATA.ip);
     serv_addr.sin_port = htons(port);
 
 
@@ -56,7 +56,7 @@ void connectPort(int port, FileData fdata){
 
 }
 // Get the command and process it
-void getCommand(int i, char * user, FileData fdata) {
+void getCommand(int i, char * user) {
     int j = 0, lenUsername = 0, lenAudio = 0;
     //char aux[BUFF_SIZE], text[BUFF_SIZE],  port_s[BUFF_SIZE], user2[BUFF_SIZE], audio[BUFF_SIZE];
     char *user2, *audio;
@@ -80,11 +80,11 @@ void getCommand(int i, char * user, FileData fdata) {
                 break;
 
             int port = atoi(user2);
-            connectPort(port, fdata);
+            connectPort(port, FILEDATA);
             Protocol *p = newProtocol();
             int id = 1;
             char *header = "[TR_NAME]";
-            char *data = fdata.user_name;
+            char *data = FILEDATA.user_name;
             char length[2];
             int _len = strlen(data);
             if(_len >= 10)

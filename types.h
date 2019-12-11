@@ -53,6 +53,8 @@
 volatile int close_1; // Variable to control the system when a killing signal is received (SIGINT, SIGTERM)
 volatile int break_listener;
 
+FileData FILEDATA;
+
 typedef struct  {
     char * user_name;
     char * audio_folder;
@@ -71,7 +73,7 @@ typedef struct {
 } Protocol; //
 
 typedef struct {//TODO
-    pthread_t fd_child;       // file descriptor for the child-thread
+    int fd_child;  // file descriptor for the child-thread /*TODO: CHECK THIS*/
     int port;           // port assigned to the listener
     Protocol * rcv_msg;     // message received
     Protocol * send_msg;// message to send | sent message

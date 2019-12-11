@@ -32,7 +32,6 @@ int main(int arg, const char* argv[]) {
     close_1 = FALSE;
     signal(SIGINT, kctrlc);
     signal(SIGTERM, kctrlc);
-    FileData data;
     char *user = calloc(0,0);
     int command, file;
     char buffer[BUFF_SIZE];
@@ -51,7 +50,7 @@ int main(int arg, const char* argv[]) {
         exit(1);
     }
 
-    data = getFileData(file);
+    FILEDATA = getFileData(file);
     Control ctrl_server;
     ctrl_server.th_id = NULL;
     ctrl_server.port = atoi(data.port); // from parent
@@ -65,14 +64,14 @@ int main(int arg, const char* argv[]) {
     //user = realloc(user, (BUFF_SIZE)*sizeof(user));
 
     while (close_1 == FALSE) {
-        writeUser(data.user_name);
+        writeUser(FILEDATA.user_name);
         readUntil(STDIN_FILENO, &user,'\n');
         if(close_1 == TRUE)
             break;
         command = parseInput(user);
 
         if (command >= 0 && command != 6) {
-            getCommand(command, user, data);
+            getCommand(command, user);
         }
         else if(command == 6){
             break;
