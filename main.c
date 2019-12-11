@@ -53,8 +53,8 @@ int main(int arg, const char* argv[]) {
     FILEDATA = getFileData(file);
     Control ctrl_server;
     ctrl_server.th_id = NULL;
-    ctrl_server.port = atoi(data.port); // from parent
-    ctrl_server.ip = data.ip;     // from parent
+    ctrl_server.port = atoi(FILEDATA.port); // from parent
+    ctrl_server.ip = FILEDATA.ip;     // from parent
     ctrl_server.end_conn = FALSE;
     ctrl_server.rcv_msg = NULL;
     ctrl_server.send_msg = NULL;
@@ -71,7 +71,7 @@ int main(int arg, const char* argv[]) {
         command = parseInput(user);
 
         if (command >= 0 && command != 6) {
-            getCommand(command, user);
+            getCommand(command, user, FILEDATA);
         }
         else if(command == 6){
             break;

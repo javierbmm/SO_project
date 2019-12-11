@@ -28,15 +28,16 @@ void fillProtocol(Protocol *_p, char _id, char * _header, char * _length, char *
 void *trNameFunc (Control *c_control) {
     c_control->name = realloc(c_control->name, c_control->rcv_msg->length);
     strcpy(c_control->name, c_control->rcv_msg->data);
-    msgOKFunc(c_control);
+    conOKFunc(c_control);
 }
 void *conOKFunc (Control *c_control) {
     Protocol *msgOk = newProtocol();
     char* header = c_control->rcv_msg->header;
-    char* data = c_control->rcv_msg->data;
+
+
     char id = c_control->rcv_msg->id;
     char * length = c_control->rcv_msg->length;
-    fillProtocol(msgOk, id, header, length, data);
+    fillProtocol(msgOk, '1', "[CONOK]", itoa(strlen(FILEDATA.user_name)), FILEDATA.user_name);
     freeProtocol(c_control->send_msg);
     c_control->send_msg = msgOk;
     sendMsg(c_control);

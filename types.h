@@ -53,7 +53,6 @@
 volatile int close_1; // Variable to control the system when a killing signal is received (SIGINT, SIGTERM)
 volatile int break_listener;
 
-FileData FILEDATA;
 
 typedef struct  {
     char * user_name;
@@ -64,6 +63,7 @@ typedef struct  {
     char * init_port;
     char * final_port;
 } FileData;
+FileData FILEDATA;
 
 typedef struct {
     char id;
