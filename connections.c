@@ -54,9 +54,10 @@ void *msgFunc (Control *c_control) {
 }
 void *msgOKFunc (Control *c_control) {
     Protocol *msgOk = newProtocol();
-    header = c_control->rcv_msg->header;
-    data = c_control->rcv_msg->data;
-    id = c_control->rcv_msg->id;
+    char* header = c_control->rcv_msg->header;
+    char* data = c_control->rcv_msg->data;
+    char id = c_control->rcv_msg->id;
+    char * length = c_control->rcv_msg->length;
     fillProtocol(msgOk, id, header, length, data);
     freeProtocol(c_control->send_msg);
     c_control->send_msg = msgOk;
@@ -195,7 +196,7 @@ void *openServer (void *_control) {
     // Fist, we create a null head, and we'll link the next threads to this head
     node_t * head = NULL;
     head = malloc(sizeof(node_t));
-    /*if (head == NULL) {
+    if (head == NULL) {
         return 1;
     }
     head->data = NULL;
