@@ -4,6 +4,7 @@
 
 #include "connections.h"
 #include <types.h>
+#include <stdlib.h>
 Protocol p;
 void fillProtocol(Protocol *_p, char _id, char * _header, char * _length, char *_data){
     // empty-ing
@@ -23,7 +24,6 @@ void fillProtocol(Protocol *_p, char _id, char * _header, char * _length, char *
     *(_p->header) = _header;
     *(_p->data) = _data;
     *(_p->length) = _length;*/
-
 }
 void *trNameFunc (Control *c_control) {
     c_control->name = realloc(c_control->name, c_control->rcv_msg->length);
@@ -36,8 +36,9 @@ void *conOKFunc (Control *c_control) {
 
 
     char id = c_control->rcv_msg->id;
-    char * length = c_control->rcv_msg->length;
-    fillProtocol(msgOk, '1', "[CONOK]", itoa(strlen(FILEDATA.user_name)), FILEDATA.user_name);
+    char _length [2];
+    sprintf(_length,"%d",strlen(FILEDATA.user_name));
+    fillProtocol(msgOk, '1', "[CONOK]", _length, FILEDATA.user_name);
     freeProtocol(c_control->send_msg);
     c_control->send_msg = msgOk;
     sendMsg(c_control);

@@ -71,7 +71,7 @@ int main(int arg, const char* argv[]) {
         command = parseInput(user);
 
         if (command >= 0 && command != 6) {
-            getCommand(command, user, FILEDATA);
+            getCommand(command, user);
         }
         else if(command == 6){
             break;
