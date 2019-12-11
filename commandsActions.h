@@ -11,7 +11,7 @@
 
 int conn_fd;
 
-void getCommand(int i, char* user, FileData fileData);
-void connectPort(int port, FileData fileData);
+void getCommand(int i, char* user);
+void connectPort(int port);
 
 #endif //PROJECTF1_1_COMMANDSACTIONS_H

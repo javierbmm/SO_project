@@ -251,7 +251,7 @@ void * newConnection (void *_control) {
     Control *control = (Control*)_control;
     myprint("oh hey2\n");
 
-    void (*func_array[])(control) = {trNameFunc, conOkFunc, conKOFunc, endConn};
+    void (*func_array[])(control) = {trNameFunc, conOKFunc, conKOFunc, endConn};
     myprint("func array\n");
     while(break_listener == FALSE) {
         getMsg(control);

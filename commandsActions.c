@@ -80,7 +80,7 @@ void getCommand(int i, char * user) {
                 break;
 
             int port = atoi(user2);
-            connectPort(port, FILEDATA);
+            connectPort(port);
             Protocol *p = newProtocol();
             int id = 1;
             char *header = "[TR_NAME]";
