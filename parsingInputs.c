@@ -18,7 +18,7 @@ int parseInput(char *user) {
         if(found == TRUE)
             return i;
     }
-
+    printf("OPTION: |%d|\n",i);
     write(1, ERRORCOMMAND, strlen(ERRORCOMMAND));
     return i;
 }

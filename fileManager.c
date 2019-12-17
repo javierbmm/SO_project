@@ -33,7 +33,6 @@ int readUntil(int file, char** word, char limit){
     char letter[1];
     while(close_1 == 0){
         if(read(file, letter, 1) > 0){
-            printf("[%c]\n",letter[0]);
             // reading letter by letter (one byte at time) until limit
             if(letter[0] == limit || letter[0] == '\0') {
                 //printf("|%c|", letter[0]);
@@ -50,7 +49,6 @@ int readUntil(int file, char** word, char limit){
 }
 
 int sreadUntil(char *input, char** word, char limit){
-    printf("received: |%s|\n",input);
     int wordLength = 0;
     char letter[1];
     while(close_1 == 0){
@@ -61,7 +59,6 @@ int sreadUntil(char *input, char** word, char limit){
         *word = (char*)realloc(*word, ++wordLength);
         (*word)[wordLength-1] = letter[0];
     }
-    printf("word: |%s|\n",*word);
     return wordLength;
 }
 int readUntilLimit(int file, char** line, char limit){
@@ -102,7 +99,6 @@ FileData getFileData (const int file) {
         size_of_word = readUntilLimit(file, &word, delimiter) ;
         char *word_cpy = malloc(size_of_word+1);
         strcpy(word_cpy, word);
-        printf("-> %s\n",word_cpy);
         switch (i) {
             case 0:
                 data.user_name = word_cpy;

@@ -6,25 +6,7 @@
 #include <types.h>
 #include <stdlib.h>
 Protocol p;
-void fillProtocol(Protocol *_p, char _id, char * _header, char * _length, char *_data){
-    // empty-ing
-    memset(_p->header,0,strlen(_p->header)); // empty-ing header
-    memset(_p->header,0,strlen(_p->length)); // empty-ing header
-    memset(_p->header,0,strlen(_p->data)); // empty-ing header
 
-    _p->header = realloc(_p->header, strlen(_header));
-    _p->data   = realloc(_p->data, strlen(_data));
-    _p->length = realloc(_p->length, strlen(_length));
-
-    // filling
-    _p->id = _id;
-    strcpy(_p->header, _header);
-    strcpy(_p->data, _data);
-    strcpy(_p->length, _length);/*
-    *(_p->header) = _header;
-    *(_p->data) = _data;
-    *(_p->length) = _length;*/
-}
 void *trNameFunc (Control *c_control) {
     c_control->name = realloc(c_control->name, c_control->rcv_msg->length);
     strcpy(c_control->name, c_control->rcv_msg->data);
@@ -37,7 +19,7 @@ void *conOKFunc (Control *c_control) {
 
     char id = c_control->rcv_msg->id;
     char _length [2];
-    sprintf(_length,"%d",strlen(FILEDATA.user_name));
+    sprintf(_length,"%ld",strlen(FILEDATA.user_name));
     fillProtocol(msgOk, '1', "[CONOK]", _length, FILEDATA.user_name);
     freeProtocol(c_control->send_msg);
     c_control->send_msg = msgOk;
@@ -48,13 +30,11 @@ void *conKOFunc (Control *c_control) {
     p_new.header = "[CONKO]";
     sendMsg(c_control);
 }
-
 ////////
 /* TODO: */
 void *msgFunc (Control *c_control) {
     //sendMsg(c_control);
 }
-
 void *broadcastFunc (Control *c_control) {
 
 }
@@ -71,7 +51,6 @@ void *endConn (Control *c_control){
     c_control->end_conn = TRUE;
 }
 ////////
-
 //we parse the header to know which action we have to do
 int parseHeader (Protocol p) {
     //TODO COMPLETAR
@@ -90,14 +69,6 @@ void * sendMsg (Control *c_control) {
     write (c_control->fd_client,c_control->send_msg->length, strlen(c_control->send_msg->length));
     write (c_control->fd_client,c_control->send_msg->data, strlen(c_control->send_msg->data));
 }
-
-void freeProtocol(Protocol *_p){
-    free(_p->header);
-    free(_p->length);
-    free(_p->data);
-    free(_p);
-}
-
 void freeControl(Control *_control){
     free(_control->name);
     free(_control->ip);
@@ -107,24 +78,15 @@ void freeControl(Control *_control){
 
     return;
 }
-
-Protocol *newProtocol(){
-    Protocol *_protocol;
-    printf("sizeofprotocol: %d\n", sizeof(_protocol));
-    _protocol = (Protocol*)malloc(sizeof(Protocol));
-    printf("made a new protocol\n");
-    _protocol->header = calloc(0,0);
-    _protocol->data = (char*)malloc(1);
-    _protocol->id = 0;
-    _protocol->length = malloc(2);
-    return _protocol;
-}
-
 void getMsg(Control *control){
     char* asd_ = calloc(0, 0); // throwaway variable
 
-    read(control->fd_client, &control->rcv_msg->id, 1); // reading id
-    myprint("1\n");
+    int error =read(control->fd_client, &control->rcv_msg->id, 1); // reading id
+    if(error < 1){
+        break_listener = TRUE;
+        break;
+    }
+    printf("rcv id: %c\n",control->rcv_msg->id);
 
     readUntil(control->fd_client, &asd_, '['); // reading '['
     myprint("2\n");
@@ -235,17 +197,17 @@ void *openServer (void *_control) {
         pthread_kill(*child_ctrls[i].th_id, SIGTERM);
         sleep(2);
         pthread_join(*child_ctrls[i].th_id, NULL);
-
+        /* TODO: instead of doing this, kill the child threads on parent (don't wait for global variables) and start
+         *      the closing routine here (sending the DC packet to the client
+         */
+        close(child_ctrls[i].fd_client);
         freeControl(&child_ctrls[i]);
         //free(child_ctrls[i]);
     }
     free(child_ctrls);
 
     // Close socket
-    close(listenfd);
 }
-
-
 // this one is to create the small "servers"
 void * newConnection (void *_control) {
     myprint("inside newConnection()\n");
@@ -254,6 +216,7 @@ void * newConnection (void *_control) {
 
     void (*func_array[])(control) = {trNameFunc, conOKFunc, conKOFunc, endConn};
     myprint("func array\n");
+
     while(break_listener == FALSE) {
         getMsg(control);
         myprint("gotmsg\n");

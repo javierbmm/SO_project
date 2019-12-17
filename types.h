@@ -15,7 +15,7 @@
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <pthread.h>
-
+#include <protocol.h>
 #define SHOWCONNECTIONS_ID "0"
 #define CONNECT_ID "1"
 #define SAY_ID "2"
@@ -64,13 +64,6 @@ typedef struct  {
     char * final_port;
 } FileData;
 FileData FILEDATA;
-
-typedef struct {
-    char id;
-    char * header;
-    char * length;
-    char * data;
-} Protocol; //
 
 typedef struct {//TODO
     int fd_child;  // file descriptor for the child-thread /*TODO: CHECK THIS*/

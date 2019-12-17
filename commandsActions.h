@@ -10,8 +10,11 @@
 #include "types.h"
 
 int conn_fd;
+char *conn_username;
 
 void getCommand(int i, char* user);
 void connectPort(int port);
+Protocol readMsg();
+void checkConn();
 
 #endif //PROJECTF1_1_COMMANDSACTIONS_H

@@ -4,7 +4,6 @@
 
 #include <commandsActions.h>
 #include <fileManager.h>
-#include <connections.h>
 
 void sendtofd(Protocol p, int fd){
     write (1, &p.id, 1);
@@ -55,6 +54,26 @@ void connectPort(int port){
     conn_fd = sockfd;
 
 }
+
+Protocol readMsg(){/*
+    Protocol *p = newProtocol();
+    read(conn_fd, , 1); // reading id
+    readUntil(conn_fd, &asd_, '['); // reading '['
+    memset(control->rcv_msg->header,0,strlen(control->rcv_msg->header)); // empty-ing header
+    readUntil(conn_fd, &control->rcv_msg->header, ']'); // reading header
+    read(conn_fd, control->rcv_msg->length, 2); // reading length
+
+    int _length = atoi(control->rcv_msg->length);
+    memset(control->rcv_msg->data,0,strlen(control->rcv_msg->data)); // empty-ing data
+    myprint("5\n");
+    control->rcv_msg->data = realloc(control->rcv_msg->data, _length); // length bytes long (pretty obvious isn't it)
+    myprint("6\n");
+    read(conn_fd, control->rcv_msg->data, _length);
+    myprint("freeing\n");
+
+    free(asd_);*/
+
+}
 // Get the command and process it
 void getCommand(int i, char * user) {
     int j = 0, lenUsername = 0, lenAudio = 0;
@@ -67,12 +86,14 @@ void getCommand(int i, char * user) {
         case 0:
             myprint("Testing...\n");
             // child process because return value zero
-            if (fork() == 0)
-                execvp("show_connections.sh", NULL);
+            if (fork() == 0) {
+                char *args[] = {FILEDATA.ip, FILEDATA.init_port, FILEDATA.final_port};
+                execvp("show_connections.sh", args);
                 // parent process because return value non-zero.
-            else
+            }else
                 break;
-        case 1:
+            break;
+        case 88:
             j = strlen(CONNECT) + 1;
             if (user[j-1] == ' ')
                 lenUsername = sreadUntil(&user[j], &user2, '\n');
@@ -95,6 +116,10 @@ void getCommand(int i, char * user) {
             fillProtocol(p, 1, header, length, data); // (Protoºcol *_p, char _id, char * _header, char * _length, char *_data)
             sendtofd(*p, conn_fd);
             write(1, COULDNTCONNECT, strlen(COULDNTCONNECT));
+            /* TODO: Refactor this */
+            char buffer[10];
+            read(conn_fd, buffer, 9);
+            write(1, buffer, 10);
             //freeProtocol(p);
             break;
       /*  case 2:

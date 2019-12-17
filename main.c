@@ -28,7 +28,7 @@ void kctrlc() {
     //fcntl(0, F_SETFL, fcntl(0, F_GETFL) | O_NONBLOCK); // TODO: check this function because can be dangerous (see the comment above)
 }
 int main(int arg, const char* argv[]) {
-    fcntl(0, F_SETFL, fcntl(0, F_GETFL) & ~O_NONBLOCK);
+//    fcntl(0, F_SETFL, fcntl(0, F_GETFL) & ~O_NONBLOCK);
     close_1 = FALSE;
     signal(SIGINT, kctrlc);
     signal(SIGTERM, kctrlc);
