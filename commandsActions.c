@@ -55,24 +55,21 @@ void connectPort(int port){
 
 }
 
-Protocol readMsg(){/*
+Protocol * readMsg(){
     Protocol *p = newProtocol();
-    read(conn_fd, , 1); // reading id
-    readUntil(conn_fd, &asd_, '['); // reading '['
-    memset(control->rcv_msg->header,0,strlen(control->rcv_msg->header)); // empty-ing header
-    readUntil(conn_fd, &control->rcv_msg->header, ']'); // reading header
-    read(conn_fd, control->rcv_msg->length, 2); // reading length
+    char * _;//throwable
+    read(conn_fd, p->id, 1); // reading id
+    readUntil(conn_fd, &_, '['); // reading '['
+    readUntil(conn_fd, p->header, ']'); // reading header
+    read(conn_fd, p->length, 2); // reading length
 
-    int _length = atoi(control->rcv_msg->length);
-    memset(control->rcv_msg->data,0,strlen(control->rcv_msg->data)); // empty-ing data
-    myprint("5\n");
-    control->rcv_msg->data = realloc(control->rcv_msg->data, _length); // length bytes long (pretty obvious isn't it)
-    myprint("6\n");
-    read(conn_fd, control->rcv_msg->data, _length);
-    myprint("freeing\n");
+    int _length = atoi(p->length);
+    p.->data = realloc(p->data, p->length); // length bytes long (pretty obvious isn't it)
+    read(conn_fd, p->data, p->length);
 
-    free(asd_);*/
+    free(_);
 
+    return p;
 }
 // Get the command and process it
 void getCommand(int i, char * user) {
@@ -93,7 +90,7 @@ void getCommand(int i, char * user) {
             }else
                 break;
             break;
-        case 88:
+        case 1:
             j = strlen(CONNECT) + 1;
             if (user[j-1] == ' ')
                 lenUsername = sreadUntil(&user[j], &user2, '\n');
@@ -113,14 +110,14 @@ void getCommand(int i, char * user) {
             else if(_len < 10)
                 sprintf(length, "0%ld", strlen(data));
 
-            fillProtocol(p, 1, header, length, data); // (Protoºcol *_p, char _id, char * _header, char * _length, char *_data)
+            fillProtocol(p, 1, header, length, data); // (Prototcol *_p, char _id, char * _header, char * _length, char *_data)
             sendtofd(*p, conn_fd);
             write(1, COULDNTCONNECT, strlen(COULDNTCONNECT));
             /* TODO: Refactor this */
-            char buffer[10];
-            read(conn_fd, buffer, 9);
-            write(1, buffer, 10);
-            //freeProtocol(p);
+            Protocol rcv_msg = readMsg();
+            conn_username = realloc (conn_username, strlen(rcv_msg->data));
+            strcpy(conn_username, rcv_msg->data);
+            freeProtocol(rcv_msg);
             break;
       /*  case 2:
             j = strlen(SAY) + 1;
