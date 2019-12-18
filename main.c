@@ -63,7 +63,9 @@ int main(int arg, const char* argv[]) {
     pthread_create(&listener_id, NULL, openServer, (void*)&ctrl_server);
     //user = realloc(user, (BUFF_SIZE)*sizeof(user));
 
-    conn_username = calloc(0, 0);
+
+    // initialazing variable from commandsActions.h "conn_username"
+    conn_username = calloc(0,0);
     while (close_1 == FALSE) {
         writeUser(FILEDATA.user_name);
         readUntil(STDIN_FILENO, &user,'\n');
