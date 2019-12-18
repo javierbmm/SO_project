@@ -64,7 +64,7 @@ Protocol * readMsg(){
     read(conn_fd, p->length, 2); // reading length
 
     int _length = atoi(p->length);
-    p.->data = realloc(p->data, p->length); // length bytes long (pretty obvious isn't it)
+    p->data = realloc(p->data, p->length); // length bytes long (pretty obvious isn't it)
     read(conn_fd, p->data, p->length);
 
     free(_);
@@ -114,7 +114,7 @@ void getCommand(int i, char * user) {
             sendtofd(*p, conn_fd);
             write(1, COULDNTCONNECT, strlen(COULDNTCONNECT));
             /* TODO: Refactor this */
-            Protocol rcv_msg = readMsg();
+            Protocol * rcv_msg = readMsg();
             conn_username = realloc (conn_username, strlen(rcv_msg->data));
             strcpy(conn_username, rcv_msg->data);
             freeProtocol(rcv_msg);

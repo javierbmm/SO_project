@@ -16,6 +16,7 @@
 #include <arpa/inet.h>
 #include <pthread.h>
 #include <protocol.h>
+
 #define SHOWCONNECTIONS_ID "0"
 #define CONNECT_ID "1"
 #define SAY_ID "2"

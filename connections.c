@@ -84,7 +84,6 @@ void getMsg(Control *control){
     int error =read(control->fd_client, &control->rcv_msg->id, 1); // reading id
     if(error < 1){
         break_listener = TRUE;
-        break;
     }
     printf("rcv id: %c\n",control->rcv_msg->id);
 
