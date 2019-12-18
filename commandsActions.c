@@ -75,7 +75,7 @@ Protocol * readMsg(){
 void getCommand(int i, char * user) {
     int j = 0, lenUsername = 0, lenAudio = 0;
     //char aux[BUFF_SIZE], text[BUFF_SIZE],  port_s[BUFF_SIZE], user2[BUFF_SIZE], audio[BUFF_SIZE];
-    char *user2, *audio;
+    char *user2, *audio, *port_s, *text;
     user2 = calloc(0,0);
     audio = malloc(0);
     // int port; ??
@@ -119,30 +119,29 @@ void getCommand(int i, char * user) {
             strcpy(conn_username, rcv_msg->data);
             freeProtocol(rcv_msg);
             break;
-      /*  case 2:
-            j = strlen(SAY) + 1;
-            k = 0;
-            while (user[j] > '0' && user[j] < '9') {
-                user2[k] = user[j];
-                k++;
-                j++;
+        case 2:
+            Protocol * p = newProtocol();
+            char * _ = calloc (0,0); //thorwable variable
+            j = strlen(DOWNLOAD) + 1;
+            if (user[j-1] == ' ')
+                j+= sreadUntil(&user[j], &user2, ' ');// we're reading the name of the user
+            else
+                break;
+            j += sreadUntil(&(user[j]), &_, '"'); //we're reading the trash until the first character of teh audio
+            if(lenUsername > 0 && user[lenUsername+2] != ' '){
+                lenText = sreadUntil(&(user[j]), text, '"'); //we're reading the audio
+            }else{
+                write(1, "error\n", strlen("error\n"));
+                break;
             }
-            user2[k] = '\0';
-            while (user[j] != '"') {
-                j++;
-            }
-            j++;
-            k = 0;
-            while (user[j] != '"') {
-                text[k] = user[j];
-                j++;
-                k++;
-            }
-            text[k] = '\0';
-            write(1, NOCONNECTIONS, strlen(NOCONNECTIONS));
-
+            free(_);
+            char s_lenText [2];
+            sprintf(s_lenText, "%d", lenText);
+            fillProtocol(p, '2', "[MSG]", s_lenText );
+            sendtofd(*p, conn_fd);
+            freeProtocol(p);
             break;
-        case 3:
+       /* case 3:
             j = strlen(BROADCAST);
             while (user[j] != '"') {
                 j++;
