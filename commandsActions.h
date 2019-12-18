@@ -10,7 +10,7 @@
 #include "types.h"
 
 int conn_fd;
-char *conn_username;
+char *conn_username = NULL;
 
 void getCommand(int i, char* user);
 void connectPort(int port);
