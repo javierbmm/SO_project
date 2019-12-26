@@ -68,7 +68,6 @@ Protocol* readMsg(){
     read(conn_fd, p->data, p->length);
 
     free(_);
-
     return p;
 }
 
@@ -128,9 +127,9 @@ void getCommand(int i, char * user) {
                 j+= sreadUntil(&user[j], &user2, ' ');// we're reading the name of the user
             else
                 break;
-            j += sreadUntil(&(user[j]), &_, '"'); //we're reading the trash until the first character of teh audio
+            j += sreadUntil(&(user[j]), &_, '"'); //we're reading the trash until the first character of the text
             if(lenUsername > 0 && user[lenUsername+2] != ' '){
-                lenText = sreadUntil(&(user[j]), text, '"'); //we're reading the audio
+                lenText = sreadUntil(&(user[j]), text, '"'); //we're text
             }else{
                 write(1, "error\n", strlen("error\n"));
                 break;

@@ -34,7 +34,7 @@ void *conKOFunc (Control *c_control) {
 ////////
 /* TODO: */
 void *msgFunc (Control *c_control) {
-    //sendMsg(c_control);
+    write(1, c_control->rcv_msg->data, strlen(c_control->rcv_msg->data)); //print the message received
 }
 void *broadcastFunc (Control *c_control) {
 
@@ -215,6 +215,9 @@ void * newConnection (void *_control) {
 
         if(control->end_conn == TRUE){
             // TODO: start server-client disconnection routine (?
+            fillProtocol(control->send_msg, '6', "[CONOK]", 0, "");
+            sendMsg(control);
+            control->end_conn = TRUE;
             break;
         }
     }
