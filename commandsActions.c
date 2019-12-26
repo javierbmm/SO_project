@@ -55,13 +55,13 @@ void connectPort(int port){
 
 }
 
-Protocol * readMsg(){
+Protocol* readMsg(){
     Protocol *p = newProtocol();
-    char * _;//throwable
-    read(conn_fd, p->id, 1); // reading id
-    readUntil(conn_fd, &_, '['); // reading '['
+    char * _ = calloc(0,0);                           //throwable
+    read(conn_fd, p->id, 1);            // reading id
+    readUntil(conn_fd, &_, '[');        // reading '['
     readUntil(conn_fd, p->header, ']'); // reading header
-    read(conn_fd, p->length, 2); // reading length
+    read(conn_fd, p->length, 2);        // reading length
 
     int _length = atoi(p->length);
     p->data = realloc(p->data, p->length); // length bytes long (pretty obvious isn't it)
@@ -71,6 +71,7 @@ Protocol * readMsg(){
 
     return p;
 }
+
 // Get the command and process it
 void getCommand(int i, char * user) {
     int j = 0, lenUsername = 0, lenAudio = 0;

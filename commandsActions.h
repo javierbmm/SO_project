@@ -14,7 +14,7 @@ char *conn_username;
 
 void getCommand(int i, char* user);
 void connectPort(int port);
-Protocol * readMsg();
+Protocol* readMsg();
 void checkConn();
 
 #endif //PROJECTF1_1_COMMANDSACTIONS_H
