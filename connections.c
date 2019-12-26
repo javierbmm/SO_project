@@ -13,6 +13,7 @@ void *trNameFunc (Control *c_control) {
     conOKFunc(c_control);
 }
 void *conOKFunc (Control *c_control) {
+    myprint("Estoy en conOKFunc\n");
     Protocol *msgOk = newProtocol();
     char* header = c_control->rcv_msg->header;
 
@@ -81,28 +82,22 @@ void freeControl(Control *_control){
 void getMsg(Control *control){
     char* asd_ = calloc(0, 0); // throwaway variable
 
-    int error =read(control->fd_client, &control->rcv_msg->id, 1); // reading id
+    int error = read(control->fd_client, &control->rcv_msg->id, 1); // reading id
     if(error < 1){
-        break_listener = TRUE;
+        control->end_conn = TRUE;
+        return;
     }
-    printf("rcv id: %c\n",control->rcv_msg->id);
-
+    printf("After error\n");
     readUntil(control->fd_client, &asd_, '['); // reading '['
-    myprint("2\n");
 
     memset(control->rcv_msg->header,0,strlen(control->rcv_msg->header)); // empty-ing header
-    myprint("3\n");
     readUntil(control->fd_client, &control->rcv_msg->header, ']'); // reading header
     read(control->fd_client, control->rcv_msg->length, 2); // reading length
-    myprint("4\n");
 
     int _length = atoi(control->rcv_msg->length);
     memset(control->rcv_msg->data,0,strlen(control->rcv_msg->data)); // empty-ing data
-    myprint("5\n");
     control->rcv_msg->data = realloc(control->rcv_msg->data, _length); // length bytes long (pretty obvious isn't it)
-    myprint("6\n");
     read(control->fd_client, control->rcv_msg->data, _length);
-    myprint("freeing\n");
 
     free(asd_);
     return;
@@ -155,7 +150,6 @@ void *openServer (void *_control) {
     head->data = NULL;
     head->next = NULL;
 */
-    myprint("im here\n");
     Control * child_ctrls = calloc (0,0);
     break_listener = FALSE;
     while(1)
@@ -209,19 +203,13 @@ void *openServer (void *_control) {
 }
 // this one is to create the small "servers"
 void * newConnection (void *_control) {
-    myprint("inside newConnection()\n");
     Control *control = (Control*)_control;
-    myprint("oh hey2\n");
 
     void (*func_array[])(control) = {trNameFunc, conOKFunc, conKOFunc, endConn};
-    myprint("func array\n");
 
     while(break_listener == FALSE) {
         getMsg(control);
-        myprint("gotmsg\n");
-        printf("- header: %s\n- data: %s\n",control->rcv_msg->header, control->rcv_msg->data);
         int option = parseHeader(*(control->rcv_msg));
-        printf("option: [%d]\n", option);
         if(option >= 0)
             *func_array[option];
 
