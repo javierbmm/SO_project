@@ -6,6 +6,9 @@
 #define SO_PROJECT_PROTOCOL_H
 
 #include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+
 typedef struct {
     char id;
     char * header;
@@ -15,7 +18,8 @@ typedef struct {
 
 Protocol *newProtocol();
 void freeProtocol(Protocol *_p);
-void fillProtocol(Protocol *_p, char _id, char * _header, char * _length, char *_data);
-
+void resetProtocol(Protocol *_p);
+void fillProtocol(Protocol *_p, char _id, char * _header, char *_data);
+void printProtocol(Protocol p);
 
 #endif //SO_PROJECT_PROTOCOL_H

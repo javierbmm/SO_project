@@ -13,8 +13,9 @@ int conn_fd;
 char *conn_username;
 
 void getCommand(int i, char* user);
-void connectPort(int port);
+int connectPort(int port);
 Protocol* readMsg();
+int sendtofd(Protocol p, int fd);
 void checkConn();
-
+void handle_sigpipe();
 #endif //PROJECTF1_1_COMMANDSACTIONS_H

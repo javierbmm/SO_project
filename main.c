@@ -12,9 +12,9 @@
 #define PERSEFONE "$Persefone:  "
 
 
-void writeUser(char * username) {
+void writeUser() {
     write(1, "$", strlen ("$"));
-    write(1, username, strlen(username));
+    write(1, FILEDATA.user_name, strlen(FILEDATA.user_name));
     write(1, ":", strlen (":"));
 }
 
@@ -32,6 +32,8 @@ int main(int arg, const char* argv[]) {
     close_1 = FALSE;
     signal(SIGINT, kctrlc);
     signal(SIGTERM, kctrlc);
+    signal(SIGPIPE, handle_sigpipe);
+
     char *user = calloc(0,0);
     int command, file;
     char buffer[BUFF_SIZE];
@@ -67,7 +69,7 @@ int main(int arg, const char* argv[]) {
     // initialazing variable from commandsActions.h "conn_username"
     conn_username = calloc(0,0);
     while (close_1 == FALSE) {
-        writeUser(FILEDATA.user_name);
+        writeUser();
         readUntil(STDIN_FILENO, &user,'\n');
         if(close_1 == TRUE)
             break;
@@ -77,6 +79,7 @@ int main(int arg, const char* argv[]) {
             getCommand(command, user);
         }
         else if(command == 6){
+            myprint("break command\n");
             break;
         }
         // Empty-ing the buffer

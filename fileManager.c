@@ -59,6 +59,9 @@ int sreadUntil(char *input, char** word, char limit){
         *word = (char*)realloc(*word, ++wordLength);
         (*word)[wordLength-1] = letter[0];
     }
+    *word = (char*)realloc(*word, ++wordLength);
+    (*word)[wordLength-1] = '\0';
+
     return wordLength;
 }
 int readUntilLimit(int file, char** line, char limit){
@@ -99,6 +102,7 @@ FileData getFileData (const int file) {
         size_of_word = readUntilLimit(file, &word, delimiter) ;
         char *word_cpy = malloc(size_of_word+1);
         strcpy(word_cpy, word);
+        word_cpy[size_of_word] = '\0';
         switch (i) {
             case 0:
                 data.user_name = word_cpy;

@@ -35,6 +35,7 @@
 #define TESTING "Testing..."
 #define NOCONNECTIONS "No connections available.\n"
 #define COULDNTCONNECT "Could not connect to the port.\n"
+#define COULDNTSEND "Could not send the message.\n"
 #define BUFF_SIZE 180
 #define TRUE 1
 #define FALSE 0

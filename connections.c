@@ -8,34 +8,41 @@
 Protocol p;
 
 void *trNameFunc (Control *c_control) {
-    c_control->name = realloc(c_control->name, c_control->rcv_msg->length);
+    fflush(stdout);
+    c_control->name = realloc(c_control->name, atoi(c_control->rcv_msg->length));
+    fflush(stdout);
     strcpy(c_control->name, c_control->rcv_msg->data);
     conOKFunc(c_control);
 }
 void *conOKFunc (Control *c_control) {
-    myprint("Estoy en conOKFunc\n");
-    Protocol *msgOk = newProtocol();
     char* header = c_control->rcv_msg->header;
-
 
     char id = c_control->rcv_msg->id;
     char _length [2];
     sprintf(_length,"%ld",strlen(FILEDATA.user_name));
-    fillProtocol(msgOk, '1', "[CONOK]", _length, FILEDATA.user_name);
-    freeProtocol(c_control->send_msg);
-    c_control->send_msg = msgOk;
+    fillProtocol(c_control->send_msg, '1', "[CONOK]", FILEDATA.user_name);
+    fflush(stdout);
     sendMsg(c_control);
 }
 void *conKOFunc (Control *c_control) {
-    Protocol p_new;
-    p_new.header = "[CONKO]";
-    sendMsg(c_control);
+
+}
+
+void *msgFunc (Control *c_control) {
+    myprint("\0337");  // Saves cursor position and attributes
+
+    myprint("\033[1A\033[180D");  // Move cursor 1 line up and 180 characters left
+
+    myprint("[");
+    myprint(c_control->name);
+    myprint("]:");
+    write(1, c_control->rcv_msg->data, strlen(c_control->rcv_msg->data)); //print the message received
+
+    myprint("\0338");  // Restore cursor from saved position and attributes
 }
 ////////
 /* TODO: */
-void *msgFunc (Control *c_control) {
-    write(1, c_control->rcv_msg->data, strlen(c_control->rcv_msg->data)); //print the message received
-}
+/*
 void *broadcastFunc (Control *c_control) {
 
 }
@@ -47,28 +54,35 @@ void *listAudiosFunc (Control *c_control) {
 }
 void *audioRqstFunc (Control *c_control) {
 
-}
+}*/
+////////
+
 void *endConn (Control *c_control){
     c_control->end_conn = TRUE;
 }
-////////
 //we parse the header to know which action we have to do
 int parseHeader (Protocol p) {
-    //TODO COMPLETAR
-    char headers[][20] = {TR_NAME, CONOK, CONKO, MSG, MSGOK, EXIT_MSG};
-    int i, length = sizeof(headers)/sizeof(headers[0]), found = FALSE;
+    //TODO: Complete all the options/commands here and also we have to take into account
+    //      the id of the protocol (otherwise, we will have a conflict with CONOK)
+
+    char headers[][20] = {TR_NAME, CONOK, CONKO, MSG,EXIT_MSG};
+    int i=-1, length = sizeof(headers)/sizeof(headers[0]), found = FALSE;
 
     for(i = 0; i < length; i++) {
         found = (strcasecmp(p.header, headers[i]) == 0)? TRUE: FALSE;
         if(found == TRUE)
             return i;
     }
+
+    return i;
 }
 void * sendMsg (Control *c_control) {
     write (c_control->fd_client,&c_control->send_msg->id, 1);
     write (c_control->fd_client,c_control->send_msg->header, strlen(c_control->send_msg->header));
     write (c_control->fd_client,c_control->send_msg->length, strlen(c_control->send_msg->length));
     write (c_control->fd_client,c_control->send_msg->data, strlen(c_control->send_msg->data));
+    write (c_control->fd_client,c_control->send_msg->data, strlen(c_control->send_msg->data));
+
 }
 void freeControl(Control *_control){
     free(_control->name);
@@ -81,20 +95,19 @@ void freeControl(Control *_control){
 }
 void getMsg(Control *control){
     char* asd_ = calloc(0, 0); // throwaway variable
-
     int error = read(control->fd_client, &control->rcv_msg->id, 1); // reading id
     if(error < 1){
         control->end_conn = TRUE;
         return;
     }
-    printf("After error\n");
-    readUntil(control->fd_client, &asd_, '['); // reading '['
 
+    readUntil(control->fd_client, &asd_, '['); // reading '['
     memset(control->rcv_msg->header,0,strlen(control->rcv_msg->header)); // empty-ing header
+
     readUntil(control->fd_client, &control->rcv_msg->header, ']'); // reading header
     read(control->fd_client, control->rcv_msg->length, 2); // reading length
 
-    int _length = atoi(control->rcv_msg->length);
+    int _length = atoi(&control->rcv_msg->length[0]) + 10*atoi(&control->rcv_msg->length[1]);
     memset(control->rcv_msg->data,0,strlen(control->rcv_msg->data)); // empty-ing data
     control->rcv_msg->data = realloc(control->rcv_msg->data, _length); // length bytes long (pretty obvious isn't it)
     read(control->fd_client, control->rcv_msg->data, _length);
@@ -172,13 +185,11 @@ void *openServer (void *_control) {
         child_ctrls[actual_thread].port = control->port; // from parent
         child_ctrls[actual_thread].ip = control->ip;     // from parent
         child_ctrls[actual_thread].end_conn = FALSE;
-        myprint("oh hey\n");
+        child_ctrls[actual_thread].name = calloc(0,0);
 
         child_ctrls[actual_thread].rcv_msg = newProtocol();
         child_ctrls[actual_thread].send_msg = newProtocol();
-        myprint("creating a thread\n");
         pthread_create(&(child_ctrls[actual_thread].th_id), NULL, newConnection, (void*)&(child_ctrls[actual_thread]) );
-        myprint("created anther thread\n");
         actual_thread++;
 
         sleep(1);
@@ -205,20 +216,31 @@ void *openServer (void *_control) {
 void * newConnection (void *_control) {
     Control *control = (Control*)_control;
 
-    void (*func_array[])(control) = {trNameFunc, conOKFunc, conKOFunc, endConn};
+    void (*func_array[])(control) = {trNameFunc, conOKFunc, conKOFunc, msgFunc, endConn};
 
     while(break_listener == FALSE) {
         getMsg(control);
         int option = parseHeader(*(control->rcv_msg));
-        if(option >= 0)
-            *func_array[option];
+        if(option >= 0){
+            if(option > 4){
+                myprint("ERROR: Wrong command/input\n");
+                continue;
+            }
+            func_array[option](control);
+        }else
+            control->end_conn = TRUE;
 
         if(control->end_conn == TRUE){
+            myprint("exit child\n");
             // TODO: start server-client disconnection routine (?
-            fillProtocol(control->send_msg, '6', "[CONOK]", 0, "");
+         /*   fillProtocol(control->send_msg, '6', "[CONOK]", "0", " ");
+            myprint("fce1\n");
             sendMsg(control);
-            control->end_conn = TRUE;
+            myprint("fce1\n");*/
             break;
         }
+        resetProtocol(control->rcv_msg);
     }
+
+    myprint("exiting th child \n");
 }
