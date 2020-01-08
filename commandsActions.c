@@ -115,6 +115,7 @@ void getCommand(int i, char * user) {
                     i++;
                     ports_arr = realloc(ports_arr, i);
                     ports_arr[i] = malloc(1);
+                    skipDelimiter(ports_fd, '\n');
                 }
                 int j = 0;
                 char *port = malloc(1);
