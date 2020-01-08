@@ -98,14 +98,16 @@ FileData getFileData (const int file) {
     char *word = malloc(1);
     int size_of_word = 1;
 
-    while (size_of_word> 0) { // 0 reached end of fie?
+    while (size_of_word> 0) { // 0 reached end of file
         size_of_word = readUntilLimit(file, &word, delimiter) ;
-        char *word_cpy = malloc(size_of_word+1);
+        char *word_cpy = malloc(size_of_word);
         strcpy(word_cpy, word);
-        word_cpy[size_of_word] = '\0';
+
         switch (i) {
             case 0:
                 data.user_name = word_cpy;
+                data.user_name = realloc(data.user_name, size_of_word+1);
+                data.user_name[size_of_word] = '\0';
                 break;
             case 1:
                 data.audio_folder = word_cpy;

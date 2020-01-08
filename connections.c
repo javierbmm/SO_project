@@ -118,7 +118,7 @@ void getMsg(Control *control){
 //for creating the big server (main one)/listener
 void *openServer (void *_control) {
     Control *control = (Control*)_control;
-    int listenfd = 0, connfd = 0, g_listenfd;
+    int listenfd = -1, connfd = -1, g_listenfd;
     struct sockaddr_in serv_addr;
     char sendBuff[1025];
 
@@ -231,7 +231,6 @@ void * newConnection (void *_control) {
             control->end_conn = TRUE;
 
         if(control->end_conn == TRUE){
-            myprint("exit child\n");
             // TODO: start server-client disconnection routine (?
          /*   fillProtocol(control->send_msg, '6', "[CONOK]", "0", " ");
             myprint("fce1\n");
@@ -241,6 +240,4 @@ void * newConnection (void *_control) {
         }
         resetProtocol(control->rcv_msg);
     }
-
-    myprint("exiting th child \n");
 }

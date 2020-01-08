@@ -85,16 +85,53 @@ void getCommand(int i, char * user) {
     audio = malloc(0);
     text = malloc(0);
     Protocol * client_protocol;
+    pid_t child_pid;
     // int port; ??
     switch (i) {
         case 0: // SHOW CONNECTIONS
             // child process because return value zero
-            if (fork() == 0) {
-                char *args[] = {FILEDATA.ip, FILEDATA.init_port, FILEDATA.final_port};
-                execvp("show_connections.sh", args);
+           //int saved_stdout = dup(1);
+            child_pid = fork();
+            if (child_pid == 0) {
+                char *args[] = {"show_connections.sh", FILEDATA.ip, FILEDATA.init_port, FILEDATA.final_port, NULL};
+                /*char *args[5];
+                args[0] = "show_connections.sh";
+                args[1] = "127.0.0.1";
+                args[2] = "8010";
+                args[3] = "8020";
+                args[4] = NULL;*/
+                int ports_fd = open("ports.txt", O_CREAT | O_WRONLY |  O_TRUNC, S_IRWXU);
+                dup2(ports_fd, STDOUT_FILENO);
+                execv(args[0], args);
+                myprint("EXECVP ERROR\n");
                 // parent process because return value non-zero.
-            }else
-                break;
+            }else{
+                waitpid(child_pid, NULL, 0);
+                char **ports_arr = malloc(1);
+                ports_arr[0] = malloc(1);
+                int ports_fd = open("ports.txt", O_RDONLY);
+                int i = 0;
+                while(readUntil(ports_fd, &ports_arr[i], '\n') > 0) {
+                    i++;
+                    ports_arr = realloc(ports_arr, i);
+                    ports_arr[i] = malloc(1);
+                }
+                int j = 0;
+                char *port = malloc(1);
+                char available_connections_msg[30];
+                sprintf(available_connections_msg, "%d connections available\n", i);
+                myprint(available_connections_msg);
+                while(j < i){
+                    sreadUntil(&ports_arr[j][5], &port, ' ');
+                    myprint(port);
+                    myprint("\n");
+                    free(ports_arr[j]);
+                    j++;
+                }
+                free(ports_arr);
+                free(port);
+                close(ports_fd);
+            }
             break;
         case 1: // CONNECT
             j = strlen(CONNECT) + 1;
