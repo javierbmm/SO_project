@@ -97,7 +97,6 @@ int main(int arg, const char* argv[]) {
     free(FILEDATA.init_port);
     free(FILEDATA.ip);
     free(FILEDATA.port);
-    free(FILEDATA.web_ip);
     close(file);
 
     return 0;

@@ -262,8 +262,9 @@ void getCommand(int i, char * user) {
                     myprint("ERROR: Wrong audio name\n");
                     break;
                 }
-                resetProtocol(server_protocol);
+                printProtocol(*server_protocol);
                 write(file_fd, server_protocol->data, server_protocol->length);
+                resetProtocol(server_protocol);
             }
             close(file_fd);
             printf("Done\n");

@@ -134,6 +134,8 @@ int sendfile(Control *c_control, char* filename){
         printf("fill\n");
         sendMsg(c_control);
         printf("send\n");
+
+        memset(BUFFER, 0, CHUNK_SIZE);
     }
     printf("Sending3\n");
     if(error < 0)  // is this necessary?
