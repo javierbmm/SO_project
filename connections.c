@@ -5,12 +5,12 @@
 #include "connections.h"
 #include <types.h>
 #include <stdlib.h>
+#include <dirent.h>
+
 Protocol p;
 
 void *trNameFunc (Control *c_control) {
-    fflush(stdout);
     c_control->name = realloc(c_control->name, atoi(c_control->rcv_msg->length));
-    fflush(stdout);
     strcpy(c_control->name, c_control->rcv_msg->data);
     conOKFunc(c_control);
 }
@@ -31,14 +31,85 @@ void *conKOFunc (Control *c_control) {
 void *msgFunc (Control *c_control) {
     myprint("\0337");  // Saves cursor position and attributes
 
-    myprint("\033[1A\033[180D");  // Move cursor 1 line up and 180 characters left
+    myprint("\033[1A\033[180D\033[2K");  // Move cursor 1 line up and 180 characters left and clear line
 
     myprint("[");
     myprint(c_control->name);
     myprint("]:");
     write(1, c_control->rcv_msg->data, strlen(c_control->rcv_msg->data)); //print the message received
-
     myprint("\0338");  // Restore cursor from saved position and attributes
+}
+
+
+void *showAudiosFunc (Control *c_control) {
+    DIR *d;
+    struct dirent *dir;
+    char audio_dir[30];
+    sprintf(audio_dir, "./%s", FILEDATA.audio_folder);
+    d = opendir(audio_dir);
+    char *audio_list;
+    int str_len = 1, prev_len = 0;
+    audio_list = malloc(1);
+    audio_list[prev_len] = '[';
+    prev_len = str_len;
+    if (d) {
+        while ((dir = readdir(d)) != NULL) {
+            if(dir->d_name[0] == '.')
+                continue;
+            str_len += strlen(dir->d_name) + 1;
+
+            // Appending each file to the audio_list:
+            audio_list = realloc(audio_list, str_len);
+            strcpy(&audio_list[prev_len], &dir->d_name);
+
+            audio_list[str_len-1] = '\\';
+
+            prev_len = str_len;
+        }
+        closedir(d);
+    }
+    audio_list[str_len-1] = ']';
+    audio_list[str_len] = '\0';
+
+    resetProtocol(c_control->send_msg);
+    fillProtocol(c_control->send_msg, '4', "[LIST_AUDIOS]", audio_list);
+    sendMsg(c_control);
+}
+/**
+ * Send the checksum of a file using md5sum external program
+ * @param c_control
+ * @param filename
+ * @return FALSE in case of failure, TRUE in success
+ */
+int sendChcksum(Control *c_control){
+    return TRUE;
+}
+/**
+ * Send a file in chunks of data to the client file descriptor inside c_control struct
+ * @param c_control
+ * @param filename
+ * @return FALSE in case of failure, TRUE in success
+ **/
+int sendfile(Control *c_control, char* filename){
+    int CHUNK = 255, error = 0;
+    int f_fd = open(filename, O_RDONLY);
+    if(f_fd < 0)
+        return FALSE;
+    char BUFFER[CHUNK];
+    while(error = read(f_fd, BUFFER, CHUNK) > 0){ // Until end of file.
+        resetProtocol(c_control->send_msg);
+        fillProtocol(c_control->send_msg, '5', "[AUDIO_RSPNS]", BUFFER);
+        sendMsg(c_control);
+    }
+    if(error < 0)
+        return FALSE;
+
+    sendChcksum(c_control);
+
+    return TRUE;
+}
+void *audioRqstFunc (Control *c_control) {
+
 }
 ////////
 /* TODO: */
@@ -46,17 +117,8 @@ void *msgFunc (Control *c_control) {
 void *broadcastFunc (Control *c_control) {
 
 }
-void *showAudiosFunc (Control *c_control) {
-
-}
-void *listAudiosFunc (Control *c_control) {
-
-}
-void *audioRqstFunc (Control *c_control) {
-
-}*/
+*/
 ////////
-
 void *endConn (Control *c_control){
     c_control->end_conn = TRUE;
 }
@@ -65,7 +127,7 @@ int parseHeader (Protocol p) {
     //TODO: Complete all the options/commands here and also we have to take into account
     //      the id of the protocol (otherwise, we will have a conflict with CONOK)
 
-    char headers[][20] = {TR_NAME, CONOK, CONKO, MSG,EXIT_MSG};
+    char headers[][20] = {TR_NAME, CONOK, CONKO, MSG, SHOW_AUDIOS, EXIT_MSG};
     int i=-1, length = sizeof(headers)/sizeof(headers[0]), found = FALSE;
 
     for(i = 0; i < length; i++) {
@@ -80,7 +142,6 @@ void * sendMsg (Control *c_control) {
     write (c_control->fd_client,&c_control->send_msg->id, 1);
     write (c_control->fd_client,c_control->send_msg->header, strlen(c_control->send_msg->header));
     write (c_control->fd_client,c_control->send_msg->length, strlen(c_control->send_msg->length));
-    write (c_control->fd_client,c_control->send_msg->data, strlen(c_control->send_msg->data));
     write (c_control->fd_client,c_control->send_msg->data, strlen(c_control->send_msg->data));
 
 }
@@ -216,13 +277,13 @@ void *openServer (void *_control) {
 void * newConnection (void *_control) {
     Control *control = (Control*)_control;
 
-    void (*func_array[])(control) = {trNameFunc, conOKFunc, conKOFunc, msgFunc, endConn};
+    void (*func_array[])(control) = {trNameFunc, conOKFunc, conKOFunc, msgFunc, showAudiosFunc, endConn};
 
     while(break_listener == FALSE) {
         getMsg(control);
         int option = parseHeader(*(control->rcv_msg));
         if(option >= 0){
-            if(option > 4){
+            if(option > 5){
                 myprint("ERROR: Wrong command/input\n");
                 continue;
             }

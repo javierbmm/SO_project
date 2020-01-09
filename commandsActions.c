@@ -6,10 +6,13 @@
 #include <fileManager.h>
 
 void handle_sigpipe(){
+    closeConn();
+}
+
+void closeConn(){
     close(conn_fd);
     conn_fd = 0;
 }
-
 int sendtofd(Protocol p, int fd){
     int error = 0;
 
@@ -61,7 +64,9 @@ int connectPort(int port){
 Protocol* readMsg(){
     Protocol *p = newProtocol();
     char * _ = calloc(0,0);             //throwable
-    read(conn_fd, &p->id, 1);            // reading id
+    if(read(conn_fd, &p->id, 1) < 1 )   // reading id
+        return NULL;
+
     readUntil(conn_fd, &_, '[');        // reading '['
     readUntil(conn_fd, &p->header, ']'); // reading header
     read(conn_fd, p->length, 2);        // reading length
@@ -84,7 +89,7 @@ void getCommand(int i, char * user) {
     user2 = calloc(0,0);
     audio = malloc(0);
     text = malloc(0);
-    Protocol * client_protocol;
+    Protocol * client_protocol, *server_protocol;
     pid_t child_pid;
     // int port; ??
     switch (i) {
@@ -94,12 +99,6 @@ void getCommand(int i, char * user) {
             child_pid = fork();
             if (child_pid == 0) {
                 char *args[] = {"show_connections.sh", FILEDATA.ip, FILEDATA.init_port, FILEDATA.final_port, NULL};
-                /*char *args[5];
-                args[0] = "show_connections.sh";
-                args[1] = "127.0.0.1";
-                args[2] = "8010";
-                args[3] = "8020";
-                args[4] = NULL;*/
                 int ports_fd = open("ports.txt", O_CREAT | O_WRONLY |  O_TRUNC, S_IRWXU);
                 dup2(ports_fd, STDOUT_FILENO);
                 execv(args[0], args);
@@ -155,10 +154,13 @@ void getCommand(int i, char * user) {
             sendtofd(*p, conn_fd);
             // write(1, COULDNTCONNECT, strlen(COULDNTCONNECT));
             /* TODO: Refactor this */
-            Protocol * rcv_msg = readMsg();
-            conn_username = realloc(conn_username, strlen(rcv_msg->data));
-            strcpy(conn_username, rcv_msg->data);
-            freeProtocol(rcv_msg);
+            server_protocol = readMsg();
+            if(server_protocol == NULL)
+                break;
+            conn_username = realloc(conn_username, strlen(server_protocol->data));
+            strcpy(conn_username, server_protocol->data);
+            freeProtocol(p);
+            freeProtocol(server_protocol);
             break;
         case 2: // SAY
             client_protocol = newProtocol();
@@ -169,6 +171,8 @@ void getCommand(int i, char * user) {
                 j+= sreadUntil(&user[j], &user2, ' ');// we're reading the name of the user
             else
                 break;
+            myprint("almost it\n");
+
             j += sreadUntil(&(user[j]), &_, '"'); //we're reading the trash until the first character of the text
             if(user[lenUsername+2] != ' '){
                 lenText = sreadUntil(&(user[j]), &text, '"'); //we're text
@@ -177,6 +181,7 @@ void getCommand(int i, char * user) {
                 break;
             }
             free(_);
+            myprint("got it\n");
             fillProtocol(client_protocol, '2', "[MSG]", text);
             if(sendtofd(*client_protocol, conn_fd) < 0 || conn_fd <= 0)
                 myprint(COULDNTSEND);
@@ -198,19 +203,31 @@ void getCommand(int i, char * user) {
             text[k] = '\0';
             write(1, NOCONNECTIONS, strlen(NOCONNECTIONS));
 
-            break;
-        case 4:
-            j = strlen(SHOWAUDIOS) + 1;
-            k = 0;
-            while (user[j] > '0' && user[j] < '9') {
-                user2[k] = user[j];
-                k++;
-                j++;
-            }
-            aux[k] = '\0';
-            write(1, NOCONNECTIONS, strlen(NOCONNECTIONS));
-
             break;*/
+        case 4: // SHOWAUDIOS
+            client_protocol = newProtocol();
+            fillProtocol(client_protocol, '4', "[SHOW_AUDIOS]", " ");
+
+            if(sendtofd(*client_protocol, conn_fd) < 0 || conn_fd <= 0)
+                myprint(COULDNTSEND);
+
+            freeProtocol(client_protocol);
+            // waiting answer with list of audios:
+            server_protocol = readMsg();
+            if(server_protocol == NULL)
+                break;
+
+            // Now we have to read the list of audios stored as [audio_name1\n audio_name2\n ... audio_nameN]
+            int readLen = 1;
+            char * audio_name = malloc(0);
+            while(atoi(server_protocol->length)> readLen){
+                readLen += sreadUntil2(&server_protocol->data[readLen], &audio_name, '\\', ']');
+                myprint(audio_name);
+                myprint("\n");
+            }
+            freeProtocol(server_protocol);
+            free(audio_name);
+            break;
         case 5:
             j = strlen(DOWNLOAD) + 1;
             //printf()
@@ -234,4 +251,5 @@ void getCommand(int i, char * user) {
     }
     free(audio);
     free(user2);
+    free(text);
 }

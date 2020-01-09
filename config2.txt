@@ -1,7 +1,7 @@
 Naobi
 Audios1
 127.0.0.1
-8015
+10015
 Montserrat.salle.url.edu
-8010
-8020
+10010
+10020

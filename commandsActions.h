@@ -12,6 +12,7 @@
 int conn_fd;
 char *conn_username;
 
+void closeConn();
 void getCommand(int i, char* user);
 int connectPort(int port);
 Protocol* readMsg();

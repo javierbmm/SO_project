@@ -1,7 +1,7 @@
 Persefone
-Audios1
+Audios
 127.0.0.1
-8012
+10012
 Montserrat.salle.url.edu
-8010
-8020
+10010
+10020

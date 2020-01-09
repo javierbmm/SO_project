@@ -64,6 +64,23 @@ int sreadUntil(char *input, char** word, char limit){
 
     return wordLength;
 }
+
+int sreadUntil2(char *input, char** word, char limit, char limit2){
+    int wordLength = 0;
+    char letter[1];
+    while(close_1 == 0){
+        letter[0] = input[wordLength];
+        // reading letter by letter (one byte at time) until limit
+        if(letter[0] == limit || letter[0] == limit2 || letter[0] == '\n')
+            break;
+        *word = (char*)realloc(*word, ++wordLength);
+        (*word)[wordLength-1] = letter[0];
+    }
+    *word = (char*)realloc(*word, ++wordLength);
+    (*word)[wordLength-1] = '\0';
+
+    return wordLength;
+}
 int readUntilLimit(int file, char** line, char limit){
     int endOfLinePosition = getSizeOfLine(file, limit);  // Get the number of characters to read
 
