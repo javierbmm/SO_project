@@ -85,7 +85,7 @@ Protocol* readMsg(){
 void getCommand(int i, char * user) {
     int j = 0, lenUsername = 0, lenAudio = 0;
     //char aux[BUFF_SIZE], text[BUFF_SIZE],  port_s[BUFF_SIZE], user2[BUFF_SIZE], audio[BUFF_SIZE];
-    char *user2, *audio, *port_s, *text;
+    char *user2, *audio, *port_s, *text, *audio_name;
     user2 = calloc(0,0);
     audio = malloc(0);
     text = malloc(0);
@@ -207,6 +207,7 @@ void getCommand(int i, char * user) {
         case 4: // SHOWAUDIOS
             client_protocol = newProtocol();
             fillProtocol(client_protocol, '4', "[SHOW_AUDIOS]", " ");
+            audio_name = malloc(0);
 
             if(sendtofd(*client_protocol, conn_fd) < 0 || conn_fd <= 0)
                 myprint(COULDNTSEND);
@@ -219,7 +220,7 @@ void getCommand(int i, char * user) {
 
             // Now we have to read the list of audios stored as [audio_name1\n audio_name2\n ... audio_nameN]
             int readLen = 1;
-            char * audio_name = malloc(0);
+            audio_name = malloc(0);
             while(atoi(server_protocol->length)> readLen){
                 readLen += sreadUntil2(&server_protocol->data[readLen], &audio_name, '\\', ']');
                 myprint(audio_name);
@@ -227,25 +228,48 @@ void getCommand(int i, char * user) {
             }
             freeProtocol(server_protocol);
             free(audio_name);
+
             break;
         case 5:
+            printf("Download\n");
             j = strlen(DOWNLOAD) + 1;
             //printf()
             if (user[j-1] == ' ')
                 lenUsername = sreadUntil(&user[j], &user2, ' ');
             else
                 break;
-
+            printf("here\n");
+            audio_name = malloc(0);
             if(lenUsername > 0 && user[lenUsername+2] != ' '){
-                lenAudio = sreadUntil(&(user[j+lenUsername+1]), &audio, '\0');
+                lenAudio = sreadUntil2(&(user[j+lenUsername]), &audio_name, ' ', '\0');
             }else{
                 write(1, "error\n", strlen("error\n"));
             }
-            user2 = realloc(user2, ++lenUsername);
-            user2[lenUsername-1] = '\0';
-            audio = realloc(audio, ++lenAudio);
-            audio[lenAudio-1] = '\0';
-            write(1, NOCONNECTIONS, strlen(NOCONNECTIONS));
+            printf("here2\n");
+            audio_name[strlen(audio_name)-1] = 0;
+            printf("audio_name: %s\n",audio_name);
+            client_protocol = newProtocol();
+            fillProtocol(client_protocol, '5', "[AUDIO_RQST]", audio_name);
+            sendtofd(*client_protocol, conn_fd);
+
+            int file_fd = open(audio_name, O_CREAT | O_WRONLY |  O_TRUNC, S_IRWXU);
+
+            while(1) {
+                server_protocol = readMsg();
+                if(strcasecmp(server_protocol->header, "[EOF]") == 0)
+                    break;
+                else if(strcasecmp(server_protocol->header, "[AUDIO_KO]") == 0){
+                    myprint("ERROR: Wrong audio name\n");
+                    break;
+                }
+                resetProtocol(server_protocol);
+                write(file_fd, server_protocol->data, server_protocol->length);
+            }
+            close(file_fd);
+            printf("Done\n");
+            freeProtocol(client_protocol);
+            freeProtocol(server_protocol);
+            free(audio_name);
 
             break;
     }

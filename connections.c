@@ -76,14 +76,39 @@ void *showAudiosFunc (Control *c_control) {
     sendMsg(c_control);
 }
 /**
- * Send the checksum of a file using md5sum external program
+ * Send the checksum of a file using md5sum external program, using forks, execvp and pipes
  * @param c_control
- * @param filename
+ * @param filedir
  * @return FALSE in case of failure, TRUE in success
  */
-int sendChcksum(Control *c_control){
+int sendChcksum(Control *c_control, char* filedir){
+    int fd[2];
+    char *chksum;
+    if(pipe(fd) == -1) // fd[0] -> read end, fd[1] -> write end
+        return FALSE;
+
+    int f_pid = fork();
+    if(f_pid < 0)
+        return FALSE;
+
+    if(f_pid == 0) { // CHILD process
+        dup2(fd[1], STDOUT_FILENO);
+        execvp("md5sum", filedir);
+    }else{ // PARENT process
+        waitpid(f_pid, NULL, 0);
+        chksum = malloc(0);
+        readUntil(fd[0], &chksum, ' ');
+    }
+
+    resetProtocol(c_control->send_msg);
+    fillProtocol(c_control->send_msg, '5', "[EOF]", chksum);
+    sendMsg(c_control);
+    close(fd[0]);
+    close(fd[1]);
+
     return TRUE;
 }
+
 /**
  * Send a file in chunks of data to the client file descriptor inside c_control struct
  * @param c_control
@@ -91,24 +116,42 @@ int sendChcksum(Control *c_control){
  * @return FALSE in case of failure, TRUE in success
  **/
 int sendfile(Control *c_control, char* filename){
-    int CHUNK = 255, error = 0;
-    int f_fd = open(filename, O_RDONLY);
+    int error = 0;
+    char filedir[100];
+    printf("Sending0\n");
+    sprintf(filedir, "./%s/%s", FILEDATA.audio_folder, filename);
+    myprint(filedir);
+    int f_fd = open(filedir, O_RDONLY);
     if(f_fd < 0)
         return FALSE;
-    char BUFFER[CHUNK];
-    while(error = read(f_fd, BUFFER, CHUNK) > 0){ // Until end of file.
+    char BUFFER[CHUNK_SIZE];
+    printf("Sending1\n");
+    while(error = read(f_fd, BUFFER, CHUNK_SIZE) > 0){ // Until end of file.
+        printf("Sending2\n");
         resetProtocol(c_control->send_msg);
+        printf("rst\n");
         fillProtocol(c_control->send_msg, '5', "[AUDIO_RSPNS]", BUFFER);
+        printf("fill\n");
         sendMsg(c_control);
+        printf("send\n");
     }
-    if(error < 0)
+    printf("Sending3\n");
+    if(error < 0)  // is this necessary?
         return FALSE;
 
-    sendChcksum(c_control);
+    sendChcksum(c_control, filedir);
 
     return TRUE;
 }
 void *audioRqstFunc (Control *c_control) {
+    int success = FALSE;
+    success = sendfile(c_control, c_control->rcv_msg->data);
+    if(success == FALSE){
+        resetProtocol(c_control->send_msg);
+        fillProtocol(c_control->send_msg, '5', "[AUDIO_KO]", "");
+        sendMsg(c_control);
+    }
+
 
 }
 ////////
@@ -127,7 +170,7 @@ int parseHeader (Protocol p) {
     //TODO: Complete all the options/commands here and also we have to take into account
     //      the id of the protocol (otherwise, we will have a conflict with CONOK)
 
-    char headers[][20] = {TR_NAME, CONOK, CONKO, MSG, SHOW_AUDIOS, EXIT_MSG};
+    char headers[][20] = {TR_NAME, CONOK, CONKO, MSG, SHOW_AUDIOS, AUDIO_RQST, EXIT_MSG};
     int i=-1, length = sizeof(headers)/sizeof(headers[0]), found = FALSE;
 
     for(i = 0; i < length; i++) {
@@ -277,13 +320,13 @@ void *openServer (void *_control) {
 void * newConnection (void *_control) {
     Control *control = (Control*)_control;
 
-    void (*func_array[])(control) = {trNameFunc, conOKFunc, conKOFunc, msgFunc, showAudiosFunc, endConn};
+    void (*func_array[])(control) = {trNameFunc, conOKFunc, conKOFunc, msgFunc, showAudiosFunc, audioRqstFunc,endConn};
 
     while(break_listener == FALSE) {
         getMsg(control);
         int option = parseHeader(*(control->rcv_msg));
         if(option >= 0){
-            if(option > 5){
+            if(option > 6){
                 myprint("ERROR: Wrong command/input\n");
                 continue;
             }

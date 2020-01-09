@@ -15,11 +15,14 @@ int parseInput(char *user) {
         else
             found = (strcasecmp(input, commands[i]) == 0)? TRUE: FALSE;
 
-        if(found == TRUE)
+        if(found == TRUE) {
+            free(input);
             return i;
+        }
     }
     printf("OPTION: |%d|\n",i);
     write(1, ERRORCOMMAND, strlen(ERRORCOMMAND));
+    free(input);
     return i;
 }
 

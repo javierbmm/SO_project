@@ -18,7 +18,7 @@ void *msgFunc (Control *c_control);
 void *broadcastFunc (Control *c_control);
 void *showAudiosFunc (Control *c_control);
 void *audioRqstFunc (Control *c_control);
-int sendChcksum(Control *c_control);
+int sendChcksum(Control *c_control, char* filename  );
 int sendfile(Control *c_control, char* filename);
 void *endConn (Control *c_control);
 int parseHeader (Protocol p);

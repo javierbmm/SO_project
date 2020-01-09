@@ -33,7 +33,7 @@ int main(int arg, const char* argv[]) {
     signal(SIGINT, kctrlc);
     signal(SIGTERM, kctrlc);
     signal(SIGPIPE, handle_sigpipe);
-
+    CHUNK_SIZE = 255;
     char *user = calloc(0,0);
     int command, file;
     char buffer[BUFF_SIZE];
@@ -74,7 +74,7 @@ int main(int arg, const char* argv[]) {
         if(close_1 == TRUE)
             break;
         command = parseInput(user);
-
+        printf("command: %d\n", command);
         if (command >= 0 && command != 6) {
             getCommand(command, user);
         }
@@ -91,6 +91,13 @@ int main(int arg, const char* argv[]) {
     }
 
     free(user);
+    free(FILEDATA.audio_folder);
+    free(FILEDATA.user_name);
+    free(FILEDATA.final_port);
+    free(FILEDATA.init_port);
+    free(FILEDATA.ip);
+    free(FILEDATA.port);
+    free(FILEDATA.web_ip);
     close(file);
 
     return 0;

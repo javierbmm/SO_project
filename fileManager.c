@@ -117,32 +117,36 @@ FileData getFileData (const int file) {
 
     while (size_of_word> 0) { // 0 reached end of file
         size_of_word = readUntilLimit(file, &word, delimiter) ;
-        char *word_cpy = malloc(size_of_word);
-        strcpy(word_cpy, word);
 
         switch (i) {
             case 0:
-                data.user_name = word_cpy;
-                data.user_name = realloc(data.user_name, size_of_word+1);
+                data.user_name = malloc(size_of_word+1);
+                strcpy(data.user_name, word);
                 data.user_name[size_of_word] = '\0';
                 break;
             case 1:
-                data.audio_folder = word_cpy;
+                data.audio_folder = malloc(size_of_word);
+                strcpy(data.audio_folder, word);
                 break;
             case 2:
-                data.ip = word_cpy;
+                data.ip = malloc(size_of_word);
+                strcpy(data.ip, word);
                 break;
             case 3:
-                data.port = word_cpy;
+                data.port = malloc(size_of_word);
+                strcpy(data.port, word);
                 break;
             case 4:
-                data.web_ip = word_cpy;
+                data.web_ip = malloc(size_of_word);
+                strcpy(data.web_ip, word);
                 break;
             case 5:
-                data.init_port = word_cpy;
+                data.init_port = malloc(size_of_word);
+                strcpy(data.init_port, word);
                 break;
             case 6:
-                data.final_port = word_cpy;
+                data.final_port = malloc(size_of_word);
+                strcpy(data.final_port, word);
                 break;
         };
 
