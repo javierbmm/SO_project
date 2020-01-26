@@ -153,35 +153,53 @@ void getCommand(int i, char * user) {
             show_connections();
             break;
         case 1: // CONNECT
-            if(conn_fd == 0) // checking if there is any connection already established
+            if(conn_fd > 0) // checking if there is any connection already established
                 break;
 
             j = strlen(CONNECT) + 1;
-
+            myprint("sup\n");
             if (user[j-1] == ' ')
                 lenUsername = sreadUntil(&user[j], &user2, '\0');
             else
                 break;
+            myprint("here\n");
+            if(strcmp(user2, FILEDATA.port) == 0)
+                break;
+            myprint("here2\n");
 
             conn_fd = atoi(user2);
+
             if(connectPort(conn_fd) < 0){
                 write(1, COULDNTCONNECT, strlen(COULDNTCONNECT));
                 break;
             }
+            myprint("here3\n");
 
             Protocol *p = newProtocol();
             char id = '1';
             char *header = "[TR_NAME]";
             char *data = FILEDATA.user_name;
             fillProtocol(p, id, header, data); // (Protocol *_p, char _id, char * _header, char * _length, char *_data)
+            myprint("here4\n");
+
             sendtofd(*p, conn_fd);
             // write(1, COULDNTCONNECT, strlen(COULDNTCONNECT));
             /* TODO: Refactor this */
+            myprint("connected, now reading\n");
             server_protocol = readMsg();
-            if(server_protocol == NULL)
+            myprint("read\n");
+            if(server_protocol == NULL) {
+                sleep(0.2);
+                write(1, COULDNTCONNECT, strlen(COULDNTCONNECT));
+                closeConn();
                 break;
+            }
             conn_username = realloc(conn_username, strlen(server_protocol->data));
             strcpy(conn_username, server_protocol->data);
+            char connectedMsg[100];
+            sprintf(connectedMsg, "%d connected: %s\n", conn_fd, conn_username);
+            myprint(connectedMsg);
+
             freeProtocol(p);
             freeProtocol(server_protocol);
             break;

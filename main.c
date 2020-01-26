@@ -67,7 +67,8 @@ int main(int arg, const char* argv[]) {
     //user = realloc(user, (BUFF_SIZE)*sizeof(user));
 
 
-    // initialazing variable from commandsActions.h "conn_username"
+    // initialazing variables from commandsActions.h
+    conn_fd = 0;
     conn_username = calloc(0,0);
     while (close_1 == FALSE) {
         writeUser();
@@ -75,6 +76,7 @@ int main(int arg, const char* argv[]) {
         if(close_1 == TRUE)
             break;
         command = parseInput(user);
+        printf("COMMAND: %d\n", command);
         if (command >= 0 && command < 6) {
             getCommand(command, user);
         }
