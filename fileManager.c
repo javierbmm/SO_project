@@ -40,11 +40,11 @@ int readUntil(int file, char** word, char limit){
             }
             *word = (char*)realloc(*word, ++wordLength);
             (*word)[wordLength-1] = letter[0];
+            letter[0] = 0;
         }else
             break;
     }
     //printf("word: %s\n", *word);
-
     return wordLength;
 }
 

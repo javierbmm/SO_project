@@ -23,19 +23,19 @@ void fillProtocol(Protocol *_p, char _id, char * _header, char *_data){
     _p->header = realloc(_p->header, strlen(_header));
     _p->data   = realloc(_p->data, strlen(_data));
     int _len = strlen(_data);
-    char _length[2];
+    char _length[3];
     if(_len >= 10)
-        sprintf(_length, "%ld", _len);
+        sprintf(_length, "%d", _len);
     else if(_len < 10)
-        sprintf(_length, "0%ld", _len);
+        sprintf(_length, "0%d", _len);
 
-    _p->length = realloc(_p->length, strlen(_length));
+    _p->length = realloc(_p->length, 2);
 
     // filling
     _p->id = _id;
     strcpy(_p->header, _header);
     strcpy(_p->data, _data);
-    strcpy(_p->length, _length);/*
+    strncpy(_p->length, _length, 2);/*
     *(_p->header) = _header;
     *(_p->data) = _data;
     *(_p->length) = _length;*/
@@ -49,8 +49,14 @@ void freeProtocol(Protocol *_p){
 }
 
 void resetProtocol(Protocol *_p){
-    freeProtocol(_p);
-    _p = newProtocol();
+    memset(_p->header,0,strlen(_p->header)); // empty-ing header
+    memset(_p->header,0,strlen(_p->length)); // empty-ing header
+    memset(_p->header,0,strlen(_p->data)); // empty-ing header
+
+    _p->header = realloc(_p->header, 0);
+    _p->data   = realloc(_p->data, 0);
+    _p->length = realloc(_p->length, 0);
+    _p->id = '0';
 }
 void printProtocol(Protocol p){
     write (1, &p.id, 1);

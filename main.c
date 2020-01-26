@@ -11,22 +11,25 @@
 #define START "Starting Trinity...\n\n"
 #define PERSEFONE "$Persefone:  "
 
-
 void writeUser() {
     write(1, "$", strlen ("$"));
     write(1, FILEDATA.user_name, strlen(FILEDATA.user_name));
     write(1, ":", strlen (":"));
 }
-
-void kctrlc() {
+void dc_routine(){
     write (1, "\nDISCONNECTING TRINITY...\n", strlen("DISCONNECTING TRINITY...\n\n\n"));
     close_1 = TRUE;
+    break_listener = TRUE;
+}
+void kctrlc() {
+    dc_routine();
     /* the next command is to change the locking behaviour of system call. My idea is to unblock read() so I can
      * interrupt the program whenever the user press ctrl+c
     */
     close(STDIN_FILENO);
     //fcntl(0, F_SETFL, fcntl(0, F_GETFL) | O_NONBLOCK); // TODO: check this function because can be dangerous (see the comment above)
 }
+
 int main(int arg, const char* argv[]) {
 //    fcntl(0, F_SETFL, fcntl(0, F_GETFL) & ~O_NONBLOCK);
     close_1 = FALSE;
@@ -54,7 +57,6 @@ int main(int arg, const char* argv[]) {
 
     FILEDATA = getFileData(file);
     Control ctrl_server;
-    ctrl_server.th_id = NULL;
     ctrl_server.port = atoi(FILEDATA.port); // from parent
     ctrl_server.ip = FILEDATA.ip;     // from parent
     ctrl_server.end_conn = FALSE;
@@ -74,20 +76,17 @@ int main(int arg, const char* argv[]) {
         if(close_1 == TRUE)
             break;
         command = parseInput(user);
-
         if (command >= 0 && command != 6) {
             getCommand(command, user);
         }
-        else if(command == 6){
-            myprint("break command\n");
+        else if(command == 6) {
+            dc_routine();
             break;
         }
         // Empty-ing the buffer
         //printf("%ld",sizeof(user));
         //memset(user,0, sizeof(user));
         //user[0] = '\0';
-        printf("finished\n");
-
     }
 
     free(user);

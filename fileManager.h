@@ -13,8 +13,6 @@
 #include "types.h"
 
 
-
-
 int getSizeOfLine(int file, char charLimit);
 int readUntil(int file, char** word, char limit);
 int sreadUntil(char* input, char** word, char limit); // same as above but for strings

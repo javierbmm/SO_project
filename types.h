@@ -67,7 +67,7 @@ typedef struct  {
 } FileData;
 FileData FILEDATA;
 
-typedef struct {//TODO
+typedef struct {    //TODO
     int fd_child;  // file descriptor for the child-thread /*TODO: CHECK THIS*/
     int port;           // port assigned to the listener
     Protocol * rcv_msg;     // message received
@@ -75,7 +75,7 @@ typedef struct {//TODO
     char * ip;          // ip assigned to the listener
     int fd_client;      // file descriptor from the user i'm communicating to
     char * name;        // User name (not from listener)
-    pthread_t *th_id;   // id for this thread
+    pthread_t th_id;   // id for this thread
     int end_conn;       // to notify a disconnection
 } Control; //to communicate the parent and the server thread
 

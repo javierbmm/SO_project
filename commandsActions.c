@@ -81,60 +81,83 @@ Protocol* readMsg(){
     return p;
 }
 
+void show_connections(){
+    pid_t child_pid;
+    int fd[2];
+    pipe(fd);
+    // fd[0] -> for using read end
+    // fd[1] -> for using write end
+
+    child_pid = fork();
+    if (child_pid == 0) {
+        char *args[] = {
+            "show_connections.sh",
+            FILEDATA.ip,
+            FILEDATA.init_port,
+            FILEDATA.final_port,
+            NULL
+        };
+        dup2(fd[1], 1);
+        execvp(args[0], args);
+        myprint("EXECVP ERROR\n");
+        // parent process because return value non-zero.
+    }else{
+        wait(NULL);
+        char **ports_arr = malloc(sizeof(char**) * 1);
+        ports_arr[0] = malloc(sizeof(char*) * 1);
+        int i = 0;
+        char _[1]; // throwable variable
+        while(readUntil(fd[0], &ports_arr[i], '\n') > 0) {
+            i++;
+            ports_arr = realloc(ports_arr, sizeof(char*) * (i+1));
+            ports_arr[i] = malloc(sizeof(char*) * 1);
+            //skipDelimiter(fd[0], '\n');
+            read(fd[0], _, 1);  // reading that '\n' since skipDelimiter doesn't work because it uses lseek function
+                                // which doesn't work with pipes.
+        }
+        int j = 0;
+        char *port = malloc(1);
+        char available_connections_msg[30];
+        sprintf(available_connections_msg, "%d connections available\n", i-1);
+        myprint(available_connections_msg);
+        while(j < i){
+            sreadUntil(&ports_arr[j][5], &port, ' ');
+            if(strcmp(port, FILEDATA.port) != 0){ // print only if is not my own port
+                myprint(port);
+                myprint("\n");
+            }
+            free(ports_arr[j]);
+            j++;
+        }
+
+        free(ports_arr);
+        free(port);
+        close(fd[0]);
+        close(fd[1]);
+    }
+}
 // Get the command and process it
 void getCommand(int i, char * user) {
     int j = 0, lenUsername = 0, lenAudio = 0;
     //char aux[BUFF_SIZE], text[BUFF_SIZE],  port_s[BUFF_SIZE], user2[BUFF_SIZE], audio[BUFF_SIZE];
-    char *user2, *audio, *port_s, *text;
+    char *user2, *audio, *text;
     user2 = calloc(0,0);
     audio = malloc(0);
     text = malloc(0);
     Protocol * client_protocol, *server_protocol;
-    pid_t child_pid;
     // int port; ??
     switch (i) {
         case 0: // SHOW CONNECTIONS
             // child process because return value zero
            //int saved_stdout = dup(1);
-            child_pid = fork();
-            if (child_pid == 0) {
-                char *args[] = {"show_connections.sh", FILEDATA.ip, FILEDATA.init_port, FILEDATA.final_port, NULL};
-                int ports_fd = open("ports.txt", O_CREAT | O_WRONLY |  O_TRUNC, S_IRWXU);
-                dup2(ports_fd, STDOUT_FILENO);
-                execv(args[0], args);
-                myprint("EXECVP ERROR\n");
-                // parent process because return value non-zero.
-            }else{
-                waitpid(child_pid, NULL, 0);
-                char **ports_arr = malloc(1);
-                ports_arr[0] = malloc(1);
-                int ports_fd = open("ports.txt", O_RDONLY);
-                int i = 0;
-                while(readUntil(ports_fd, &ports_arr[i], '\n') > 0) {
-                    i++;
-                    ports_arr = realloc(ports_arr, i);
-                    ports_arr[i] = malloc(1);
-                    skipDelimiter(ports_fd, '\n');
-                }
-                int j = 0;
-                char *port = malloc(1);
-                char available_connections_msg[30];
-                sprintf(available_connections_msg, "%d connections available\n", i);
-                myprint(available_connections_msg);
-                while(j < i){
-                    sreadUntil(&ports_arr[j][5], &port, ' ');
-                    myprint(port);
-                    myprint("\n");
-                    free(ports_arr[j]);
-                    j++;
-                }
-                free(ports_arr);
-                free(port);
-                close(ports_fd);
-            }
+            show_connections();
             break;
         case 1: // CONNECT
+            if(conn_fd == 0) // checking if there is any connection already established
+                break;
+
             j = strlen(CONNECT) + 1;
+
             if (user[j-1] == ' ')
                 lenUsername = sreadUntil(&user[j], &user2, '\0');
             else
@@ -165,7 +188,6 @@ void getCommand(int i, char * user) {
         case 2: // SAY
             client_protocol = newProtocol();
             char * _ = calloc (0,0); //thorwable variable
-            int lenText = 0;
             j = strlen(SAY) + 1;
             if (user[j-1] == ' ')
                 j+= sreadUntil(&user[j], &user2, ' ');// we're reading the name of the user
@@ -175,7 +197,7 @@ void getCommand(int i, char * user) {
 
             j += sreadUntil(&(user[j]), &_, '"'); //we're reading the trash until the first character of the text
             if(user[lenUsername+2] != ' '){
-                lenText = sreadUntil(&(user[j]), &text, '"'); //we're text
+                sreadUntil(&(user[j]), &text, '"'); //we're text
             }else{
                 write(1, "error1\n", strlen("error\n"));
                 break;

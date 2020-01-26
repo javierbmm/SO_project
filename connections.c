@@ -9,39 +9,31 @@
 
 Protocol p;
 
-void *trNameFunc (Control *c_control) {
+void trNameFunc (Control *c_control) {
     c_control->name = realloc(c_control->name, atoi(c_control->rcv_msg->length));
     strcpy(c_control->name, c_control->rcv_msg->data);
     conOKFunc(c_control);
 }
-void *conOKFunc (Control *c_control) {
-    char* header = c_control->rcv_msg->header;
-
-    char id = c_control->rcv_msg->id;
-    char _length [2];
-    sprintf(_length,"%ld",strlen(FILEDATA.user_name));
+void conOKFunc (Control *c_control) {
+    resetProtocol(c_control->send_msg);
     fillProtocol(c_control->send_msg, '1', "[CONOK]", FILEDATA.user_name);
-    fflush(stdout);
     sendMsg(c_control);
 }
-void *conKOFunc (Control *c_control) {
-
+void conKOFunc (Control *c_control) {
+    resetProtocol(c_control->send_msg);
+    fillProtocol(c_control->send_msg, '1', "[CONKO]", "");
+    sendMsg(c_control);
 }
-
-void *msgFunc (Control *c_control) {
+void msgFunc (Control *c_control) {
     myprint("\0337");  // Saves cursor position and attributes
-
     myprint("\033[1A\033[180D\033[2K");  // Move cursor 1 line up and 180 characters left and clear line
-
     myprint("[");
     myprint(c_control->name);
     myprint("]:");
     write(1, c_control->rcv_msg->data, strlen(c_control->rcv_msg->data)); //print the message received
     myprint("\0338");  // Restore cursor from saved position and attributes
 }
-
-
-void *showAudiosFunc (Control *c_control) {
+void showAudiosFunc (Control *c_control) {
     DIR *d;
     struct dirent *dir;
     char audio_dir[30];
@@ -60,7 +52,7 @@ void *showAudiosFunc (Control *c_control) {
 
             // Appending each file to the audio_list:
             audio_list = realloc(audio_list, str_len);
-            strcpy(&audio_list[prev_len], &dir->d_name);
+            strcpy(&audio_list[prev_len], &dir->d_name[0]);
 
             audio_list[str_len-1] = '\\';
 
@@ -80,10 +72,10 @@ void *showAudiosFunc (Control *c_control) {
  * @param c_control
  * @param filename
  * @return FALSE in case of failure, TRUE in success
- */
+ *//*
 int sendChcksum(Control *c_control){
     return TRUE;
-}
+}*/
 /**
  * Send a file in chunks of data to the client file descriptor inside c_control struct
  * @param c_control
@@ -95,31 +87,37 @@ int sendfile(Control *c_control, char* filename){
     int f_fd = open(filename, O_RDONLY);
     if(f_fd < 0)
         return FALSE;
+
     char BUFFER[CHUNK];
-    while(error = read(f_fd, BUFFER, CHUNK) > 0){ // Until end of file.
+    do{
+        error = read(f_fd, BUFFER, CHUNK);
         resetProtocol(c_control->send_msg);
         fillProtocol(c_control->send_msg, '5', "[AUDIO_RSPNS]", BUFFER);
         sendMsg(c_control);
-    }
+    }while(error > 0); // Until end of file.
+
     if(error < 0)
         return FALSE;
 
-    sendChcksum(c_control);
+    // TODO
+    //sendChcksum(c_control);
 
     return TRUE;
 }
-void *audioRqstFunc (Control *c_control) {
 
-}
 ////////
 /* TODO: */
 /*
 void *broadcastFunc (Control *c_control) {
 
 }
+
+void *audioRqstFunc (Control *c_control) {
+
+}
 */
 ////////
-void *endConn (Control *c_control){
+void endConn (Control *c_control){
     c_control->end_conn = TRUE;
 }
 //we parse the header to know which action we have to do
@@ -138,7 +136,7 @@ int parseHeader (Protocol p) {
 
     return i;
 }
-void * sendMsg (Control *c_control) {
+void sendMsg (Control *c_control) {
     write (c_control->fd_client,&c_control->send_msg->id, 1);
     write (c_control->fd_client,c_control->send_msg->header, strlen(c_control->send_msg->header));
     write (c_control->fd_client,c_control->send_msg->length, strlen(c_control->send_msg->length));
@@ -148,20 +146,18 @@ void * sendMsg (Control *c_control) {
 void freeControl(Control *_control){
     free(_control->name);
     free(_control->ip);
-    free(_control->th_id);
     freeProtocol(_control->rcv_msg);
     freeProtocol(_control->send_msg);
 
     return;
 }
 void getMsg(Control *control){
-    char* asd_ = calloc(0, 0); // throwaway variable
     int error = read(control->fd_client, &control->rcv_msg->id, 1); // reading id
     if(error < 1){
         control->end_conn = TRUE;
         return;
     }
-
+    char* asd_ = calloc(0, 0); // throwaway variable
     readUntil(control->fd_client, &asd_, '['); // reading '['
     memset(control->rcv_msg->header,0,strlen(control->rcv_msg->header)); // empty-ing header
 
@@ -179,7 +175,7 @@ void getMsg(Control *control){
 //for creating the big server (main one)/listener
 void *openServer (void *_control) {
     Control *control = (Control*)_control;
-    int listenfd = -1, connfd = -1, g_listenfd;
+    int listenfd = -1, connfd = -1;
     struct sockaddr_in serv_addr;
     char sendBuff[1025];
 
@@ -189,7 +185,6 @@ void *openServer (void *_control) {
      * For Internet family of IPv4 addresses we use AF_INET
      */
     listenfd = socket(AF_INET, SOCK_STREAM, 0);
-    g_listenfd = listenfd;
     memset(&serv_addr, '0', sizeof(serv_addr));
     memset(sendBuff, '0', sizeof(sendBuff));
 
@@ -226,14 +221,13 @@ void *openServer (void *_control) {
 */
     Control * child_ctrls = calloc (0,0);
     break_listener = FALSE;
-    while(1)
+    while(break_listener == FALSE)
     {
         /* In the call to accept(), the server is put to sleep and when for an incoming
          * client request, the three way TCP handshake* is complete, the function accept()
          * wakes up and returns the socket descriptor representing the client socket.
          */
         connfd = accept(listenfd, (struct sockaddr*)NULL, NULL);
-        // TODO: Add something here to stop looping when getting a signal. "break_while" could be reused
         if(break_listener == TRUE)
             break;
         num_of_threads++;
@@ -250,18 +244,18 @@ void *openServer (void *_control) {
 
         child_ctrls[actual_thread].rcv_msg = newProtocol();
         child_ctrls[actual_thread].send_msg = newProtocol();
-        pthread_create(&(child_ctrls[actual_thread].th_id), NULL, newConnection, (void*)&(child_ctrls[actual_thread]) );
+        pthread_create(&child_ctrls[actual_thread].th_id, NULL, newConnection, (void*)&(child_ctrls[actual_thread]) ); // HERE
+
         actual_thread++;
 
         sleep(1);
     }
-
     // Freeing memory:
     int i;
     for(i=0; i<num_of_threads; i++){
-        pthread_kill(*child_ctrls[i].th_id, SIGTERM);
+        pthread_kill(child_ctrls[i].th_id, SIGTERM);
         sleep(2);
-        pthread_join(*child_ctrls[i].th_id, NULL);
+        pthread_join(child_ctrls[i].th_id, NULL);
         /* TODO: instead of doing this, kill the child threads on parent (don't wait for global variables) and start
          *      the closing routine here (sending the DC packet to the client
          */
@@ -271,16 +265,24 @@ void *openServer (void *_control) {
     }
     free(child_ctrls);
 
-    // Close socket
+    return NULL;
 }
 // this one is to create the small "servers"
 void * newConnection (void *_control) {
     Control *control = (Control*)_control;
 
-    void (*func_array[])(control) = {trNameFunc, conOKFunc, conKOFunc, msgFunc, showAudiosFunc, endConn};
+    void (*func_array[])(Control*) = {trNameFunc, conOKFunc, conKOFunc, msgFunc, showAudiosFunc, endConn};
 
     while(break_listener == FALSE) {
         getMsg(control);
+        if(control->end_conn == TRUE){
+            // TODO: start server-client disconnection routine (?
+            /*   fillProtocol(control->send_msg, '6', "[CONOK]", "0", " ");
+               myprint("fce1\n");
+               sendMsg(control);
+               myprint("fce1\n");*/
+            return NULL;
+        }
         int option = parseHeader(*(control->rcv_msg));
         if(option >= 0){
             if(option > 5){
@@ -291,14 +293,8 @@ void * newConnection (void *_control) {
         }else
             control->end_conn = TRUE;
 
-        if(control->end_conn == TRUE){
-            // TODO: start server-client disconnection routine (?
-         /*   fillProtocol(control->send_msg, '6', "[CONOK]", "0", " ");
-            myprint("fce1\n");
-            sendMsg(control);
-            myprint("fce1\n");*/
-            break;
-        }
         resetProtocol(control->rcv_msg);
     }
+
+    return NULL;
 }

@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <stdio.h>
+#include <sys/wait.h>
 #include "types.h"
 
 int conn_fd;
@@ -16,6 +17,7 @@ void closeConn();
 void getCommand(int i, char* user);
 int connectPort(int port);
 Protocol* readMsg();
+void show_connections();
 int sendtofd(Protocol p, int fd);
 void checkConn();
 void handle_sigpipe();

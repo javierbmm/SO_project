@@ -11,20 +11,20 @@
 
 
 
-void *trNameFunc ();
-void *conOKFunc (Control *c_control);
-void *conKOFunc (Control *c_control);
-void *msgFunc (Control *c_control);
-void *broadcastFunc (Control *c_control);
-void *showAudiosFunc (Control *c_control);
-void *audioRqstFunc (Control *c_control);
+void trNameFunc ();
+void conOKFunc (Control *c_control);
+void conKOFunc (Control *c_control);
+void msgFunc (Control *c_control);
+void broadcastFunc (Control *c_control);
+void showAudiosFunc (Control *c_control);
+void audioRqstFunc (Control *c_control);
 int sendChcksum(Control *c_control);
 int sendfile(Control *c_control, char* filename);
-void *endConn (Control *c_control);
+void endConn (Control *c_control);
 int parseHeader (Protocol p);
 void getMsg (Control *control);
 void freeControl(Control *_control);
-void * sendMsg (Control *c_control);
+void sendMsg (Control *c_control);
 //for creating the big server (main one)/listener
 void *openServer (void * control);
 //this one is to create the small "servers"
