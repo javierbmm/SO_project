@@ -19,7 +19,7 @@ int sreadUntil(char* input, char** word, char limit); // same as above but for s
 int sreadUntil2(char *input, char** word, char limit, char limit2);
 int readUntilLimit(int file, char** line, char limit);
 void skipDelimiter(int file, char delimiter);
-FileData getFileData (const int file);
+FileData getFileData (const int file, FileData *_filedata);
 void myprint(char* msg);
 
 

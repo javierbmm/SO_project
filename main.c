@@ -54,8 +54,7 @@ int main(int arg, const char* argv[]) {
 
         exit(1);
     }
-
-    FILEDATA = getFileData(file);
+    getFileData(file, &FILEDATA);
     Control ctrl_server;
     ctrl_server.port = atoi(FILEDATA.port); // from parent
     ctrl_server.ip = FILEDATA.ip;     // from parent
@@ -76,7 +75,7 @@ int main(int arg, const char* argv[]) {
         if(close_1 == TRUE)
             break;
         command = parseInput(user);
-        if (command >= 0 && command != 6) {
+        if (command >= 0 && command < 6) {
             getCommand(command, user);
         }
         else if(command == 6) {
@@ -90,12 +89,13 @@ int main(int arg, const char* argv[]) {
     }
 
     free(user);
-    free(FILEDATA.audio_folder);
-    free(FILEDATA.user_name);
-    free(FILEDATA.final_port);
-    free(FILEDATA.init_port);
-    free(FILEDATA.ip);
-    free(FILEDATA.port);
+    FILEDATA.user_name? free(FILEDATA.user_name): NULL;
+    FILEDATA.audio_folder? free(FILEDATA.audio_folder): NULL;
+    FILEDATA.ip? free(FILEDATA.ip): NULL;
+    FILEDATA.port? free(FILEDATA.port): NULL;
+    FILEDATA.web_ip? free(FILEDATA.web_ip): NULL;
+    FILEDATA.final_port? free(FILEDATA.final_port): NULL;
+    FILEDATA.init_port? free(FILEDATA.init_port): NULL;
     close(file);
 
     return 0;

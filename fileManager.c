@@ -38,7 +38,7 @@ int readUntil(int file, char** word, char limit){
                 //printf("|%c|", letter[0]);
                 break;
             }
-            *word = (char*)realloc(*word, ++wordLength);
+            *word = (char*)realloc(*word, sizeof(char) * ++wordLength);
             (*word)[wordLength-1] = letter[0];
             letter[0] = 0;
         }else
@@ -56,10 +56,10 @@ int sreadUntil(char *input, char** word, char limit){
         // reading letter by letter (one byte at time) until limit
         if(letter[0] == limit || letter[0] == '\n')
             break;
-        *word = (char*)realloc(*word, ++wordLength);
+        *word = (char*)realloc(*word, sizeof(char) * ++wordLength);
         (*word)[wordLength-1] = letter[0];
     }
-    *word = (char*)realloc(*word, ++wordLength);
+    *word = (char*)realloc(*word, sizeof(char) * ++wordLength);
     (*word)[wordLength-1] = '\0';
 
     return wordLength;
@@ -73,10 +73,10 @@ int sreadUntil2(char *input, char** word, char limit, char limit2){
         // reading letter by letter (one byte at time) until limit
         if(letter[0] == limit || letter[0] == limit2 || letter[0] == '\n')
             break;
-        *word = (char*)realloc(*word, ++wordLength);
+        *word = (char*)realloc(*word, sizeof(char) * ++wordLength);
         (*word)[wordLength-1] = letter[0];
     }
-    *word = (char*)realloc(*word, ++wordLength);
+    *word = (char*)realloc(*word, sizeof(char) * ++wordLength);
     (*word)[wordLength-1] = '\0';
 
     return wordLength;
@@ -84,7 +84,7 @@ int sreadUntil2(char *input, char** word, char limit, char limit2){
 int readUntilLimit(int file, char** line, char limit){
     int endOfLinePosition = getSizeOfLine(file, limit);  // Get the number of characters to read
 
-    *line = (char*)realloc(*line,(endOfLinePosition+1)* sizeof(char)); // Assigning enough memory
+    *line = realloc(*line,(endOfLinePosition+1)* sizeof(char)); // Assigning enough memory
     // Now we have to go back on the file using read and the same number of bytes from endOfLinePosition
     lseek(file, -endOfLinePosition-1, SEEK_CUR);
     read(file, *line, endOfLinePosition);
@@ -108,45 +108,42 @@ void skipDelimiter(int file, char delimiter){
     }
 }
 
-FileData getFileData (const int file) {
-    FileData data;
+FileData getFileData (const int file, FileData *data) {
     int i = 0;
     char delimiter = '\n';
     char *word = malloc(1);
     int size_of_word = 1;
 
     while (size_of_word> 0) { // 0 reached end of file
-        size_of_word = readUntilLimit(file, &word, delimiter) ;
-
+        size_of_word = readUntilLimit(file, &word, delimiter);
         switch (i) {
             case 0:
-                data.user_name = malloc(size_of_word+1);
-                strcpy(data.user_name, word);
-                data.user_name[size_of_word] = '\0';
+                data->user_name = malloc(size_of_word+1);
+                strcpy(data->user_name, word);
                 break;
             case 1:
-                data.audio_folder = malloc(size_of_word);
-                strcpy(data.audio_folder, word);
+                data->audio_folder = malloc(size_of_word+1);
+                strcpy(data->audio_folder, word);
                 break;
             case 2:
-                data.ip = malloc(size_of_word);
-                strcpy(data.ip, word);
+                data->ip = malloc(size_of_word+1);
+                strcpy(data->ip, word);
                 break;
             case 3:
-                data.port = malloc(size_of_word);
-                strcpy(data.port, word);
+                data->port = malloc(size_of_word+1);
+                strcpy(data->port, word);
                 break;
             case 4:
-                data.web_ip = malloc(size_of_word);
-                strcpy(data.web_ip, word);
+                data->web_ip = malloc(size_of_word+1);
+                strcpy(data->web_ip, word);
                 break;
             case 5:
-                data.init_port = malloc(size_of_word);
-                strcpy(data.init_port, word);
+                data->init_port = malloc(size_of_word+1);
+                strcpy(data->init_port, word);
                 break;
             case 6:
-                data.final_port = malloc(size_of_word);
-                strcpy(data.final_port, word);
+                data->final_port = malloc(size_of_word+1);
+                strcpy(data->final_port, word);
                 break;
         };
 
@@ -158,10 +155,10 @@ FileData getFileData (const int file) {
         //free(word_cpy);
     }
 
-    free(word);
+    //free(word);
     //close(f);
 
-    return data;
+    return *data;
 }
 
 // Print function for simple strings (NO %d %f %s etc)

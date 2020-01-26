@@ -92,9 +92,9 @@ int sendfile(Control *c_control, char* filename){
     if(f_fd < 0)
         return FALSE;
 
-    char BUFFER[CHUNK];
+    char BUFFER[CHUNK_SIZE];
     do{
-        error = read(f_fd, BUFFER, CHUNK);
+        error = read(f_fd, BUFFER, CHUNK_SIZE);
         resetProtocol(c_control->send_msg);
         printf("rst\n");
         fillProtocol(c_control->send_msg, '5', "[AUDIO_RSPNS]", BUFFER);
@@ -110,15 +110,15 @@ int sendfile(Control *c_control, char* filename){
 
     return TRUE;
 }
-void *audioRqstFunc (Control *c_control) {
+void audioRqstFunc (Control *c_control) {
     int success = FALSE;
-    success = sendfile(c_control, c_control->rcv_msg->data);
-    if(success == FALSE){
+    //success = sendfile(c_control, c_control->rcv_msg->data);
+    if (success == FALSE) {
         resetProtocol(c_control->send_msg);
         fillProtocol(c_control->send_msg, '5', "[AUDIO_KO]", "");
         sendMsg(c_control);
     }
-
+}
 ////////
 /* TODO: */
 /*
