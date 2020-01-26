@@ -68,9 +68,9 @@ void showAudiosFunc (Control *c_control) {
     sendMsg(c_control);
 }
 /**
- * Send the checksum of a file using md5sum external program
+ * Send the checksum of a file using md5sum external program, using forks, execvp and pipes
  * @param c_control
- * @param filename
+ * @param filedir
  * @return FALSE in case of failure, TRUE in success
  *//*
 int sendChcksum(Control *c_control){
@@ -83,8 +83,12 @@ int sendChcksum(Control *c_control){
  * @return FALSE in case of failure, TRUE in success
  **/
 int sendfile(Control *c_control, char* filename){
-    int CHUNK = 255, error = 0;
-    int f_fd = open(filename, O_RDONLY);
+    int error = 0;
+    char filedir[100];
+    printf("Sending0\n");
+    sprintf(filedir, "./%s/%s", FILEDATA.audio_folder, filename);
+    myprint(filedir);
+    int f_fd = open(filedir, O_RDONLY);
     if(f_fd < 0)
         return FALSE;
 
@@ -92,7 +96,9 @@ int sendfile(Control *c_control, char* filename){
     do{
         error = read(f_fd, BUFFER, CHUNK);
         resetProtocol(c_control->send_msg);
+        printf("rst\n");
         fillProtocol(c_control->send_msg, '5', "[AUDIO_RSPNS]", BUFFER);
+        printf("fill\n");
         sendMsg(c_control);
     }while(error > 0); // Until end of file.
 
@@ -104,6 +110,14 @@ int sendfile(Control *c_control, char* filename){
 
     return TRUE;
 }
+void *audioRqstFunc (Control *c_control) {
+    int success = FALSE;
+    success = sendfile(c_control, c_control->rcv_msg->data);
+    if(success == FALSE){
+        resetProtocol(c_control->send_msg);
+        fillProtocol(c_control->send_msg, '5', "[AUDIO_KO]", "");
+        sendMsg(c_control);
+    }
 
 ////////
 /* TODO: */
@@ -125,7 +139,7 @@ int parseHeader (Protocol p) {
     //TODO: Complete all the options/commands here and also we have to take into account
     //      the id of the protocol (otherwise, we will have a conflict with CONOK)
 
-    char headers[][20] = {TR_NAME, CONOK, CONKO, MSG, SHOW_AUDIOS, EXIT_MSG};
+    char headers[][20] = {TR_NAME, CONOK, CONKO, MSG, SHOW_AUDIOS, AUDIO_RQST, EXIT_MSG};
     int i=-1, length = sizeof(headers)/sizeof(headers[0]), found = FALSE;
 
     for(i = 0; i < length; i++) {
@@ -285,7 +299,7 @@ void * newConnection (void *_control) {
         }
         int option = parseHeader(*(control->rcv_msg));
         if(option >= 0){
-            if(option > 5){
+            if(option > 6){
                 myprint("ERROR: Wrong command/input\n");
                 continue;
             }

@@ -55,6 +55,7 @@
 volatile int close_1; // Variable to control the system when a killing signal is received (SIGINT, SIGTERM)
 volatile int break_listener;
 
+int CHUNK_SIZE;
 
 typedef struct  {
     char * user_name;

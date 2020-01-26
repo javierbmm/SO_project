@@ -21,6 +21,7 @@ int parseInput(char *user) {
         }
     }
     write(1, ERRORCOMMAND, strlen(ERRORCOMMAND));
+    free(input);
     return i;
 }
 
