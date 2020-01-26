@@ -138,9 +138,9 @@ void show_connections(){
 }
 // Get the command and process it
 void getCommand(int i, char * user) {
-    int j = 0, lenUsername = 0, lenAudio = 0;
+    int j = 0, lenUsername = 0;// lenAudio  = 0;
     //char aux[BUFF_SIZE], text[BUFF_SIZE],  port_s[BUFF_SIZE], user2[BUFF_SIZE], audio[BUFF_SIZE];
-    char *user2, *audio, *text;
+    char *user2, *audio, *text, *audio_name;
     user2 = calloc(0,0);
     audio = malloc(0);
     text = malloc(0);
@@ -263,7 +263,7 @@ void getCommand(int i, char * user) {
             printf("here\n");
             audio_name = malloc(0);
             if(lenUsername > 0 && user[lenUsername+2] != ' '){
-                lenAudio = sreadUntil2(&(user[j+lenUsername]), &audio_name, ' ', '\0');
+                sreadUntil2(&(user[j+lenUsername]), &audio_name, ' ', '\0');
             }else{
                 write(1, "error\n", strlen("error\n"));
             }
@@ -285,7 +285,7 @@ void getCommand(int i, char * user) {
                     break;
                 }
                 printProtocol(*server_protocol);
-                write(file_fd, server_protocol->data, server_protocol->length);
+                write(file_fd, server_protocol->data, atoi(server_protocol->length));
                 resetProtocol(server_protocol);
             }
             close(file_fd);
