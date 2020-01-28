@@ -10,12 +10,13 @@
 Protocol p;
 
 void trNameFunc (Control *c_control) {
-    c_control->name = realloc(c_control->name, atoi(c_control->rcv_msg->length));
+    c_control->name = realloc(c_control->name, strlen(c_control->rcv_msg->data));
     strcpy(c_control->name, c_control->rcv_msg->data);
+    printf("name: %s\n", c_control->name);
     conOKFunc(c_control);
 }
 void conOKFunc (Control *c_control) {
-    resetProtocol(c_control->send_msg);
+    //resetProtocol(c_control->send_msg);
     fillProtocol(c_control->send_msg, '1', "[CONOK]", FILEDATA.user_name);
     sendMsg(c_control);
 }
@@ -289,6 +290,7 @@ void * newConnection (void *_control) {
 
     while(break_listener == FALSE) {
         getMsg(control);
+        myprint("got msg\n");
         if(control->end_conn == TRUE){
             // TODO: start server-client disconnection routine (?
             /*   fillProtocol(control->send_msg, '6', "[CONOK]", "0", " ");
@@ -298,6 +300,7 @@ void * newConnection (void *_control) {
             return NULL;
         }
         int option = parseHeader(*(control->rcv_msg));
+        printf("option: %d\n",option);
         if(option >= 0){
             if(option > 6){
                 myprint("ERROR: Wrong command/input\n");

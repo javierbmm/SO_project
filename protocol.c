@@ -28,7 +28,6 @@ void fillProtocol(Protocol *_p, char _id, char * _header, char *_data){
         sprintf(_length, "%d", _len);
     else if(_len < 10)
         sprintf(_length, "0%d", _len);
-
     _p->length = realloc(_p->length, 2);
 
     // filling

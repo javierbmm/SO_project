@@ -167,9 +167,7 @@ void getCommand(int i, char * user) {
                 break;
             myprint("here2\n");
 
-            conn_fd = atoi(user2);
-
-            if(connectPort(conn_fd) < 0){
+            if(connectPort(atoi(user2)) < 0){
                 write(1, COULDNTCONNECT, strlen(COULDNTCONNECT));
                 break;
             }
@@ -186,10 +184,11 @@ void getCommand(int i, char * user) {
             // write(1, COULDNTCONNECT, strlen(COULDNTCONNECT));
             /* TODO: Refactor this */
             myprint("connected, now reading\n");
+            sleep(0.2);
             server_protocol = readMsg();
             myprint("read\n");
+
             if(server_protocol == NULL) {
-                sleep(0.2);
                 write(1, COULDNTCONNECT, strlen(COULDNTCONNECT));
                 closeConn();
                 break;
@@ -197,7 +196,7 @@ void getCommand(int i, char * user) {
             conn_username = realloc(conn_username, strlen(server_protocol->data));
             strcpy(conn_username, server_protocol->data);
             char connectedMsg[100];
-            sprintf(connectedMsg, "%d connected: %s\n", conn_fd, conn_username);
+            sprintf(connectedMsg, "%s connected: %s\n", user2, conn_username);
             myprint(connectedMsg);
 
             freeProtocol(p);
