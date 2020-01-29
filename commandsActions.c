@@ -157,36 +157,29 @@ void getCommand(int i, char * user) {
                 break;
 
             j = strlen(CONNECT) + 1;
-            myprint("sup\n");
             if (user[j-1] == ' ')
                 lenUsername = sreadUntil(&user[j], &user2, '\0');
             else
                 break;
-            myprint("here\n");
             if(strcmp(user2, FILEDATA.port) == 0)
                 break;
-            myprint("here2\n");
 
             if(connectPort(atoi(user2)) < 0){
                 write(1, COULDNTCONNECT, strlen(COULDNTCONNECT));
                 break;
             }
-            myprint("here3\n");
 
             Protocol *p = newProtocol();
             char id = '1';
             char *header = "[TR_NAME]";
             char *data = FILEDATA.user_name;
             fillProtocol(p, id, header, data); // (Protocol *_p, char _id, char * _header, char * _length, char *_data)
-            myprint("here4\n");
 
             sendtofd(*p, conn_fd);
             // write(1, COULDNTCONNECT, strlen(COULDNTCONNECT));
             /* TODO: Refactor this */
-            myprint("connected, now reading\n");
             sleep(0.2);
             server_protocol = readMsg();
-            myprint("read\n");
 
             if(server_protocol == NULL) {
                 write(1, COULDNTCONNECT, strlen(COULDNTCONNECT));
@@ -210,7 +203,6 @@ void getCommand(int i, char * user) {
                 j+= sreadUntil(&user[j], &user2, ' ');// we're reading the name of the user
             else
                 break;
-            myprint("almost it\n");
 
             j += sreadUntil(&(user[j]), &_, '"'); //we're reading the trash until the first character of the text
             if(user[lenUsername+2] != ' '){
@@ -221,11 +213,11 @@ void getCommand(int i, char * user) {
             }
             free(_);
             myprint("got it\n");
+            printf("text: %s\n", text);
             fillProtocol(client_protocol, '2', "[MSG]", text);
             if(sendtofd(*client_protocol, conn_fd) < 0 || conn_fd <= 0)
                 myprint(COULDNTSEND);
 
-            myprint("after sending msg\n");
             freeProtocol(client_protocol);
             break;
        /* case 3:

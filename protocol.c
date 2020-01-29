@@ -52,9 +52,9 @@ void resetProtocol(Protocol *_p){
     memset(_p->header,0,strlen(_p->length)); // empty-ing header
     memset(_p->header,0,strlen(_p->data)); // empty-ing header
 
-    _p->header = realloc(_p->header, 0);
-    _p->data   = realloc(_p->data, 0);
-    _p->length = realloc(_p->length, 0);
+    _p->header = realloc(_p->header, 1);
+    _p->data   = realloc(_p->data, 1);
+    //_p->length = realloc(_p->length, 2);
     _p->id = '0';
 }
 void printProtocol(Protocol p){

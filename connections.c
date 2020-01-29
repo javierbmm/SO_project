@@ -12,7 +12,7 @@ Protocol p;
 void trNameFunc (Control *c_control) {
     c_control->name = realloc(c_control->name, strlen(c_control->rcv_msg->data));
     strcpy(c_control->name, c_control->rcv_msg->data);
-    printf("name: %s\n", c_control->name);
+    myprint(c_control->name);
     conOKFunc(c_control);
 }
 void conOKFunc (Control *c_control) {
@@ -21,7 +21,7 @@ void conOKFunc (Control *c_control) {
     sendMsg(c_control);
 }
 void conKOFunc (Control *c_control) {
-    resetProtocol(c_control->send_msg);
+    //resetProtocol(c_control->send_msg);
     fillProtocol(c_control->send_msg, '1', "[CONKO]", "");
     sendMsg(c_control);
 }
@@ -32,7 +32,7 @@ void msgFunc (Control *c_control) {
     myprint(c_control->name);
     myprint("]:");
     write(1, c_control->rcv_msg->data, strlen(c_control->rcv_msg->data)); //print the message received
-    myprint("\0338");  // Restore cursor from saved position and attributes
+    myprint("\n\0338");  // Restore cursor from saved position and attributes
 }
 void showAudiosFunc (Control *c_control) {
     DIR *d;
@@ -174,13 +174,12 @@ void getMsg(Control *control){
     }
     char* asd_ = calloc(0, 0); // throwaway variable
     readUntil(control->fd_client, &asd_, '['); // reading '['
-    memset(control->rcv_msg->header,0,strlen(control->rcv_msg->header)); // empty-ing header
-
+    //memset(control->rcv_msg->header,0,strlen(control->rcv_msg->header)); // empty-ing header
     readUntil(control->fd_client, &control->rcv_msg->header, ']'); // reading header
     read(control->fd_client, control->rcv_msg->length, 2); // reading length
 
-    int _length = atoi(&control->rcv_msg->length[0]) + 10*atoi(&control->rcv_msg->length[1]);
-    memset(control->rcv_msg->data,0,strlen(control->rcv_msg->data)); // empty-ing data
+    int _length = atoi(control->rcv_msg->length);
+    //memset(control->rcv_msg->data,0,strlen(control->rcv_msg->data)); // empty-ing data
     control->rcv_msg->data = realloc(control->rcv_msg->data, _length); // length bytes long (pretty obvious isn't it)
     read(control->fd_client, control->rcv_msg->data, _length);
 
@@ -290,7 +289,6 @@ void * newConnection (void *_control) {
 
     while(break_listener == FALSE) {
         getMsg(control);
-        myprint("got msg\n");
         if(control->end_conn == TRUE){
             // TODO: start server-client disconnection routine (?
             /*   fillProtocol(control->send_msg, '6', "[CONOK]", "0", " ");
@@ -300,7 +298,6 @@ void * newConnection (void *_control) {
             return NULL;
         }
         int option = parseHeader(*(control->rcv_msg));
-        printf("option: %d\n",option);
         if(option >= 0){
             if(option > 6){
                 myprint("ERROR: Wrong command/input\n");
