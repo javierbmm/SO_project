@@ -18,9 +18,8 @@ int sendtofd(Protocol p, int fd){
 
     error += write (fd, &p.id, 1);
     error += write (fd, p.header, strlen(p.header));
-    error += write (fd, p.length, strlen(p.length));
+    error += write (fd, p.length, 2);
     error += write (fd, p.data, strlen(p.data));
-
     return error;
 }
 
@@ -212,8 +211,7 @@ void getCommand(int i, char * user) {
                 break;
             }
             free(_);
-            myprint("got it\n");
-            printf("text: %s\n", text);
+
             fillProtocol(client_protocol, '2', "[MSG]", text);
             if(sendtofd(*client_protocol, conn_fd) < 0 || conn_fd <= 0)
                 myprint(COULDNTSEND);

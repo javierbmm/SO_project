@@ -12,7 +12,7 @@ Protocol p;
 void trNameFunc (Control *c_control) {
     c_control->name = realloc(c_control->name, strlen(c_control->rcv_msg->data));
     strcpy(c_control->name, c_control->rcv_msg->data);
-    myprint(c_control->name);
+
     conOKFunc(c_control);
 }
 void conOKFunc (Control *c_control) {
@@ -27,7 +27,7 @@ void conKOFunc (Control *c_control) {
 }
 void msgFunc (Control *c_control) {
     myprint("\0337");  // Saves cursor position and attributes
-    myprint("\033[1A\033[180D\033[2K");  // Move cursor 1 line up and 180 characters left and clear line
+    myprint("\033[1A\033[180D\n\033[2K");  // Move cursor 1 line up and 180 characters left and clear line
     myprint("[");
     myprint(c_control->name);
     myprint("]:");
@@ -181,8 +181,11 @@ void getMsg(Control *control){
     int _length = atoi(control->rcv_msg->length);
     //memset(control->rcv_msg->data,0,strlen(control->rcv_msg->data)); // empty-ing data
     control->rcv_msg->data = realloc(control->rcv_msg->data, _length); // length bytes long (pretty obvious isn't it)
-    read(control->fd_client, control->rcv_msg->data, _length);
+    char *_data = malloc(_length);
+    read(control->fd_client, _data, _length);
+    strcpy(control->rcv_msg->data, _data);
 
+    free(_data);
     free(asd_);
     return;
 }
