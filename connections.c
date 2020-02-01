@@ -26,13 +26,18 @@ void conKOFunc (Control *c_control) {
     sendMsg(c_control);
 }
 void msgFunc (Control *c_control) {
-    myprint("\0337");  // Saves cursor position and attributes
-    myprint("\033[1A\033[180D\n\033[2K");  // Move cursor 1 line up and 180 characters left and clear line
+    //myprint("\0337");  // Saves cursor position and attributes
+    myprint("\033[1A\033[180D\n\033[K");  // Move cursor 1 line up and 180 characters left and clear line
     myprint("[");
     myprint(c_control->name);
     myprint("]:");
-    write(1, c_control->rcv_msg->data, strlen(c_control->rcv_msg->data)); //print the message received
-    myprint("\n\0338");  // Restore cursor from saved position and attributes
+    write(1, c_control->rcv_msg->data, atoi(c_control->rcv_msg->length)); //print the message received
+    //myprint("\n\0338");  // Restore cursor from saved position and attributes
+    myprint("\033[1B\033[180D\n");  // Move cursor 1 line down and 180 characters left and clear line
+
+    write(1, "$", strlen ("$"));
+    write(1, FILEDATA.user_name, strlen(FILEDATA.user_name));
+    write(1, ":", strlen (":"));
 }
 void showAudiosFunc (Control *c_control) {
     DIR *d;

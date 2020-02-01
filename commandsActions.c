@@ -137,7 +137,7 @@ void show_connections(){
 }
 // Get the command and process it
 void getCommand(int i, char * user) {
-    int j = 0, lenUsername = 0;// lenAudio  = 0;
+    int j = 0, lenUsername = 0, lenText = 0;
     //char aux[BUFF_SIZE], text[BUFF_SIZE],  port_s[BUFF_SIZE], user2[BUFF_SIZE], audio[BUFF_SIZE];
     char *user2, *audio, *text, *audio_name;
     user2 = calloc(0,0);
@@ -160,8 +160,10 @@ void getCommand(int i, char * user) {
                 lenUsername = sreadUntil(&user[j], &user2, '\0');
             else
                 break;
-            if(strcmp(user2, FILEDATA.port) == 0)
+            if(strcmp(user2, FILEDATA.port) == 0){
+                write(1, COULDNTCONNECT, strlen(COULDNTCONNECT));
                 break;
+            }
 
             if(connectPort(atoi(user2)) < 0){
                 write(1, COULDNTCONNECT, strlen(COULDNTCONNECT));
@@ -175,8 +177,6 @@ void getCommand(int i, char * user) {
             fillProtocol(p, id, header, data); // (Protocol *_p, char _id, char * _header, char * _length, char *_data)
 
             sendtofd(*p, conn_fd);
-            // write(1, COULDNTCONNECT, strlen(COULDNTCONNECT));
-            /* TODO: Refactor this */
             sleep(0.2);
             server_protocol = readMsg();
 
@@ -205,13 +205,14 @@ void getCommand(int i, char * user) {
 
             j += sreadUntil(&(user[j]), &_, '"'); //we're reading the trash until the first character of the text
             if(user[lenUsername+2] != ' '){
-                sreadUntil(&(user[j]), &text, '"'); //we're text
+                lenText = sreadUntil(&(user[j]), &text, '"'); //we're text
             }else{
                 write(1, "error1\n", strlen("error\n"));
                 break;
             }
             free(_);
-
+            text = realloc(text, lenText + 1);
+            text[lenText] = '\0';
             fillProtocol(client_protocol, '2', "[MSG]", text);
             if(sendtofd(*client_protocol, conn_fd) < 0 || conn_fd <= 0)
                 myprint(COULDNTSEND);
