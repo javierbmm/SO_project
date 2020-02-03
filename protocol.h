@@ -13,7 +13,7 @@
 typedef struct {
     char id;
     char * header;
-    char * length;
+    char length[2];
     char * data;
 } Protocol; //
 
@@ -21,6 +21,7 @@ Protocol *newProtocol();
 void freeProtocol(Protocol *_p);
 void resetProtocol(Protocol *_p);
 void fillProtocol(Protocol *_p, char _id, char * _header, char *_data);
+void fillProtocoln(Protocol *_p, char _id, char * _header, char *_data, int _len);
 void printProtocol(Protocol p);
 
 #endif //SO_PROJECT_PROTOCOL_H

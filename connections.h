@@ -10,7 +10,6 @@
 #include <list.h>
 
 
-
 void trNameFunc ();
 void conOKFunc (Control *c_control);
 void conKOFunc (Control *c_control);
@@ -18,7 +17,7 @@ void msgFunc (Control *c_control);
 void broadcastFunc (Control *c_control);
 void showAudiosFunc (Control *c_control);
 void audioRqstFunc (Control *c_control);
-int sendChcksum(Control *c_control);
+int sendChcksum(Control *c_control, char *filedir);
 int sendfile(Control *c_control, char* filename);
 void endConn (Control *c_control);
 int parseHeader (Protocol p);

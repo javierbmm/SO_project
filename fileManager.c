@@ -25,6 +25,37 @@ int getSizeOfLine(int file, char charLimit) {
 
     return charPosition;
 }
+
+int readOnlyUntil(int file, char** word, char limit){
+    int wordLength = 0;
+    memset(*word, 0, strlen(*word));
+    //char *word = (char*)malloc(0);
+    //word = realloc(word, 0);
+    char letter[1];
+    while(close_1 == 0){
+        if(read(file, letter, 1) > 0){
+            // reading letter by letter (one byte at time) until limit
+            if(letter[0] == limit) {
+                //printf("|%c|", letter[0]);
+                break;
+            }
+            *word = (char*)realloc(*word, sizeof(char) * ++wordLength);
+            (*word)[wordLength-1] = letter[0];
+            letter[0] = 0;
+        }else
+            return 0;
+    }
+
+    if(wordLength == 0) // Read nothing a.k.a empty string
+        return 0;
+
+    *word = (char*)realloc(*word, sizeof(char) * (++wordLength));
+    (*word)[wordLength-1] = '\0';
+
+    //printf("word: %s\n", *word);
+    return wordLength;
+}
+
 int readUntil(int file, char** word, char limit){
     int wordLength = 0;
     memset(*word, 0, strlen(*word));
@@ -42,8 +73,15 @@ int readUntil(int file, char** word, char limit){
             (*word)[wordLength-1] = letter[0];
             letter[0] = 0;
         }else
-            break;
+            return 0;
     }
+
+    if(wordLength == 0) // Read nothing a.k.a empty string
+        return 0;
+
+    *word = (char*)realloc(*word, sizeof(char) * (++wordLength));
+    (*word)[wordLength-1] = '\0';
+
     //printf("word: %s\n", *word);
     return wordLength;
 }
@@ -111,7 +149,7 @@ void skipDelimiter(int file, char delimiter){
 FileData getFileData (const int file, FileData *data) {
     int i = 0;
     char delimiter = '\n';
-    char *word = malloc(1);
+    char *word = calloc(1, 1);
     int size_of_word = 1;
 
     while (size_of_word> 0) { // 0 reached end of file
@@ -166,4 +204,74 @@ void myprint(char* msg){
     char buffer[strlen(msg)+1];
     sprintf(buffer, "%s", msg);
     write(1, buffer, strlen(buffer));
+}
+/**
+ * Utility function to get the MD5SUM of file using the md5sum linux function
+ * executed using fork and execvp
+ * @param filepath indicates the path of the file
+ * @return string with md5sum key and file path
+ */
+char* get_md5sum(char* filepath){
+    pid_t child_pid;
+    int fd[2];
+    pipe(fd);
+    // fd[0] -> for using read end
+    // fd[1] -> for using write end
+
+    child_pid = fork();
+    if (child_pid == 0) {
+        char *args[] = {
+                "md5sum",
+                filepath,
+                NULL
+        };
+        dup2(fd[1], 1);
+        execvp(args[0], args);
+        return NULL;
+        // parent process because return value non-zero.
+    }else{
+        wait(NULL);
+        char* checksum = calloc(1,1);
+        if(readUntil(fd[0], &checksum, ' ') <= 1) {
+            free(checksum);
+            checksum = NULL;
+        }
+
+        close(fd[0]);
+        close(fd[1]);
+
+        return checksum;
+    }
+}
+
+/***
+ * utility function to compare and check the checksum input with the checksum
+ * obtained for the file in filepath.
+ * @param checksum: input md5sum key to check
+ * @param filepath: file to check
+ * @return TRUE (1) or FALSE (0) depending on whether or not the checksum is correct
+ */
+int check_md5sum(char* checksum, char* filepath){
+    if(checksum == NULL || filepath == NULL)
+        return FALSE;
+
+    char *new_checksum = get_md5sum(filepath);
+    int is_correct = FALSE;
+    printf("old checksum: %s \n new checksum: %s\n",checksum, new_checksum);
+    if(strncmp(new_checksum, checksum, strlen(new_checksum)) == 0)
+        is_correct = TRUE;
+
+    free(new_checksum);
+
+    return is_correct;
+}
+
+int myAtoi(const char *str, int len){
+    int i;
+    int ret = 0;
+    for(i = 0; i < len; ++i)
+    {
+        ret = ret * 10 + (str[i] - '0');
+    }
+    return ret;
 }

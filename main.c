@@ -17,7 +17,6 @@ void writeUser() {
     write(1, ":", strlen (":"));
 }
 void dc_routine(){
-    write (1, "\nDISCONNECTING TRINITY...\n", strlen("DISCONNECTING TRINITY...\n\n\n"));
     close_1 = TRUE;
     break_listener = TRUE;
 }
@@ -36,8 +35,8 @@ int main(int arg, const char* argv[]) {
     signal(SIGINT, kctrlc);
     signal(SIGTERM, kctrlc);
     signal(SIGPIPE, handle_sigpipe);
-    CHUNK_SIZE = 255;
-    char *user = calloc(0,0);
+    CHUNK_SIZE = 99;
+    char *user = calloc(1, 1);
     int command, file;
     char buffer[BUFF_SIZE];
 
@@ -62,14 +61,13 @@ int main(int arg, const char* argv[]) {
     ctrl_server.rcv_msg = NULL;
     ctrl_server.send_msg = NULL;
 
-    pthread_t listener_id;
-    pthread_create(&listener_id, NULL, openServer, (void*)&ctrl_server);
+    pthread_create(&ctrl_server.th_id, NULL, openServer, (void*)&ctrl_server);
     //user = realloc(user, (BUFF_SIZE)*sizeof(user));
 
 
     // initialazing variables from commandsActions.h
-    conn_fd = 0;
-    conn_username = calloc(0,0);
+    arrConns = calloc(1,1);
+    num_conn = 0;
     while (close_1 == FALSE) {
         writeUser();
         readUntil(STDIN_FILENO, &user,'\n');
@@ -84,13 +82,10 @@ int main(int arg, const char* argv[]) {
             dc_routine();
             break;
         }
-        // Empty-ing the buffer
-        //printf("%ld",sizeof(user));
-        //memset(user,0, sizeof(user));
-        //user[0] = '\0';
     }
-
+    write (1, "\nDISCONNECTING TRINITY...\n", strlen("DISCONNECTING TRINITY...\n\n\n"));
     free(user);
+    shutdown(ctrl_server.fd_server, SHUT_RD);
     FILEDATA.user_name? free(FILEDATA.user_name): NULL;
     FILEDATA.audio_folder? free(FILEDATA.audio_folder): NULL;
     FILEDATA.ip? free(FILEDATA.ip): NULL;
@@ -99,6 +94,9 @@ int main(int arg, const char* argv[]) {
     FILEDATA.final_port? free(FILEDATA.final_port): NULL;
     FILEDATA.init_port? free(FILEDATA.init_port): NULL;
     close(file);
+    pthread_join(ctrl_server.th_id, NULL);
+
+   // close(listener_id);
 
     return 0;
 }
