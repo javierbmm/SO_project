@@ -10,6 +10,7 @@
 #include <list.h>
 
 
+
 void trNameFunc ();
 void conOKFunc (Control *c_control);
 void conKOFunc (Control *c_control);

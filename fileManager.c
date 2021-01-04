@@ -29,14 +29,12 @@ int getSizeOfLine(int file, char charLimit) {
 int readOnlyUntil(int file, char** word, char limit){
     int wordLength = 0;
     memset(*word, 0, strlen(*word));
-    //char *word = (char*)malloc(0);
-    //word = realloc(word, 0);
+
     char letter[1];
     while(close_1 == 0){
         if(read(file, letter, 1) > 0){
             // reading letter by letter (one byte at time) until limit
             if(letter[0] == limit) {
-                //printf("|%c|", letter[0]);
                 break;
             }
             *word = (char*)realloc(*word, sizeof(char) * ++wordLength);
@@ -52,10 +50,13 @@ int readOnlyUntil(int file, char** word, char limit){
     *word = (char*)realloc(*word, sizeof(char) * (++wordLength));
     (*word)[wordLength-1] = '\0';
 
-    //printf("word: %s\n", *word);
     return wordLength;
 }
 
+/*
+ * This function reads the information until a given character and stores it in word variable. It returns the
+ * length read from the file
+ */
 int readUntil(int file, char** word, char limit){
     int wordLength = 0;
     memset(*word, 0, strlen(*word));
@@ -66,7 +67,6 @@ int readUntil(int file, char** word, char limit){
         if(read(file, letter, 1) > 0){
             // reading letter by letter (one byte at time) until limit
             if(letter[0] == limit || letter[0] == '\0') {
-                //printf("|%c|", letter[0]);
                 break;
             }
             *word = (char*)realloc(*word, sizeof(char) * ++wordLength);
@@ -82,15 +82,18 @@ int readUntil(int file, char** word, char limit){
     *word = (char*)realloc(*word, sizeof(char) * (++wordLength));
     (*word)[wordLength-1] = '\0';
 
-    //printf("word: %s\n", *word);
     return wordLength;
 }
-
+/*
+ * This function reads the information until a given character and stores it in word variable. It returns the
+ * length read from the input
+ */
 int sreadUntil(char *input, char** word, char limit){
     int wordLength = 0;
     char letter[1];
     while(close_1 == 0){
         letter[0] = input[wordLength];
+        myprint(letter);
         // reading letter by letter (one byte at time) until limit
         if(letter[0] == limit || letter[0] == '\n')
             break;
@@ -102,7 +105,9 @@ int sreadUntil(char *input, char** word, char limit){
 
     return wordLength;
 }
-
+/*
+ * Reads the information given two delimiters
+ */
 int sreadUntil2(char *input, char** word, char limit, char limit2){
     int wordLength = 0;
     char letter[1];
@@ -146,6 +151,9 @@ void skipDelimiter(int file, char delimiter){
     }
 }
 
+/*
+ * It gets and stores the information stored ina  given file
+ */
 FileData getFileData (const int file, FileData *data) {
     int i = 0;
     char delimiter = '\n';
@@ -257,7 +265,6 @@ int check_md5sum(char* checksum, char* filepath){
 
     char *new_checksum = get_md5sum(filepath);
     int is_correct = FALSE;
-    printf("old checksum: %s \n new checksum: %s\n",checksum, new_checksum);
     if(strncmp(new_checksum, checksum, strlen(new_checksum)) == 0)
         is_correct = TRUE;
 
@@ -265,7 +272,9 @@ int check_md5sum(char* checksum, char* filepath){
 
     return is_correct;
 }
-
+/*
+ * Atoi function coded by us
+ */
 int myAtoi(const char *str, int len){
     int i;
     int ret = 0;

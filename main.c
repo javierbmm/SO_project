@@ -66,15 +66,15 @@ int main(int arg, const char* argv[]) {
 
 
     // initialazing variables from commandsActions.h
-    arrConns = calloc(1,1);
-    num_conn = 0;
+    conn_fd = 0;
+    conn_username = calloc(1,1);
     while (close_1 == FALSE) {
         writeUser();
         readUntil(STDIN_FILENO, &user,'\n');
         if(close_1 == TRUE)
             break;
         command = parseInput(user);
-        printf("COMMAND: %d\n", command);
+
         if (command >= 0 && command < 6) {
             getCommand(command, user);
         }
@@ -85,6 +85,7 @@ int main(int arg, const char* argv[]) {
     }
     write (1, "\nDISCONNECTING TRINITY...\n", strlen("DISCONNECTING TRINITY...\n\n\n"));
     free(user);
+    free(conn_username);
     shutdown(ctrl_server.fd_server, SHUT_RD);
     FILEDATA.user_name? free(FILEDATA.user_name): NULL;
     FILEDATA.audio_folder? free(FILEDATA.audio_folder): NULL;

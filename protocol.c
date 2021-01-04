@@ -5,6 +5,9 @@
 #include <protocol.h>
 #include <fileManager.h>
 
+/*
+ * Function that initializes the variables of a new protocol
+ */
 Protocol *newProtocol(){
     Protocol *_protocol;
     _protocol = calloc(1, sizeof(Protocol));
@@ -16,12 +19,10 @@ Protocol *newProtocol(){
 
     return _protocol;
 }
-
+/*
+ * It fills the fields of a given protocol, with the given information passed by parameter
+ */
 void fillProtocol(Protocol *_p, char _id, char * _header, char *_data){
-    // empty-ing
-    // memset(_p->header,0,strlen(_p->header)); // empty-ing header
-    // memset(_p->header,0,strlen(_p->length)); // empty-ing header
-    // memset(_p->header,0,strlen(_p->data)); // empty-ing header
 
     _p->header = realloc(_p->header, strlen(_header)+1);
     int _len = strlen(_data);
@@ -33,7 +34,6 @@ void fillProtocol(Protocol *_p, char _id, char * _header, char *_data){
     else if(_len < 10)
         sprintf(_length, "0%d", _len);
 
-   // _p->length = realloc(_p->length, 2);
     _p->data   = realloc(_p->data, _len);
 
     // filling
@@ -42,12 +42,11 @@ void fillProtocol(Protocol *_p, char _id, char * _header, char *_data){
     strncpy(_p->data, _data, _len);
     _p->length[0] = _length[0];
     _p->length[1] = _length[1];
-    /*strncpy(_p->length, _length, 2);
-    *(_p->header) = _header;
-    *(_p->data) = _data;
-    *(_p->length) = _length;*/
-}
 
+}
+/*
+ * It fills the information of the protocol
+ */
 void fillProtocoln(Protocol *_p, char _id, char * _header, char *_data, int _len){
     _p->header = realloc(_p->header, strlen(_header));
     memset(_p->header, 0, strlen(_header));
@@ -59,7 +58,6 @@ void fillProtocoln(Protocol *_p, char _id, char * _header, char *_data, int _len
     }else if(_len < 10){
         sprintf(_length, "0%d", _len);
     }
-    // _p->length = realloc(_p->length, 2);
     _p->data   = realloc(_p->data, _len);
     memset(_p->data, 0, _len);
     // filling
@@ -69,7 +67,9 @@ void fillProtocoln(Protocol *_p, char _id, char * _header, char *_data, int _len
     _p->length[0] = _length[0];
     _p->length[1] = _length[1];
 }
-
+/*
+ * It frees the memory used for that protocol (passed by parameter)
+ */
 void freeProtocol(Protocol *_p){
     resetProtocol(_p);
 
@@ -77,7 +77,9 @@ void freeProtocol(Protocol *_p){
     free(_p->data);
     free(_p);
 }
-
+/*
+ * It resets all the variables of teh protocol
+ */
 void resetProtocol(Protocol *_p){
     memset(_p->header,0,strlen(_p->header)); // empty-ing header
     memset(_p->length,0, sizeof(_p->length));                // empty-ing length
@@ -86,9 +88,11 @@ void resetProtocol(Protocol *_p){
     _p->header[0] = 0;
     _p->data   = realloc(_p->data, 1);
     _p->data[0]   = 0;
-    //_p->length = realloc(_p->length, 2);
     _p->id = '0';
 }
+/*
+ * It prints all the information of the protocol
+ */
 void printProtocol(Protocol p){
     write (1, &p.id, 1);
     myprint("|");

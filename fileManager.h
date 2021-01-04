@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include "types.h"
 
+
 int getSizeOfLine(int file, char charLimit);
 int readOnlyUntil(int file, char** word, char limit);
 int readUntil(int file, char** word, char limit);
