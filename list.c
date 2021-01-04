@@ -4,7 +4,9 @@
 
 #include "list.h"
 
-
+/*
+ * List push. It creates a new node and stores the new information there
+ */
 void push_end(node_t * head, void* val) {
     node_t * current = head;
     while (current->next != NULL) {
@@ -16,6 +18,9 @@ void push_end(node_t * head, void* val) {
     current->next->data = val;
     current->next->next = NULL;
 }
+/*
+ * It stores the new information initialized
+ */
 void push_init(node_t ** head, void* val) {
     node_t * new_node;
     new_node = malloc(sizeof(node_t));
@@ -25,7 +30,9 @@ void push_init(node_t ** head, void* val) {
     *head = new_node;
 }
 
-
+/*
+ * It deletes the node and information from the list
+ */
 void* pop(node_t ** head) {
     void* retval = NULL;
     node_t * next_node = NULL;
@@ -41,7 +48,9 @@ void* pop(node_t ** head) {
 
     return retval;
 }
-
+/*
+ * It removes the last added node
+ */
 void* remove_last(node_t * head) {
     void* retval = NULL;
     /* if there is only one item in the list, remove it */
@@ -63,7 +72,9 @@ void* remove_last(node_t * head) {
     current->next = NULL;
     return retval;
 }
-
+/*
+ * It removes the information located in the node (number passed by parameter)
+ */
 void* remove_by_index(node_t ** head, int n) {
     int i = 0;
     void* retval = NULL;

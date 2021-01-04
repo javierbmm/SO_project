@@ -8,30 +8,47 @@
 #include <dirent.h>
 
 Protocol p;
-
+/*
+ * This function is used to store the name of the client in the Control
+ * structure for the server to know it. It first creates the needed memory
+ * dynamically and then using a strcpy copies into the control structure the name
+ * stored in the data of the protocol receivd by the server.
+ */
 void trNameFunc (Control *c_control) {
     c_control->name = realloc(c_control->name, strlen(c_control->rcv_msg->data));
     strcpy(c_control->name, c_control->rcv_msg->data);
 
     conOKFunc(c_control);
 }
+/*
+ * This function is in charge of sending the server to the client the
+ * information saying that the connection was succesfull. To do so we fill a protocol,
+ * the id of the message, the header and the data. After that we call sendMsg() function
+ * to send the message to the client.
+ */
 void conOKFunc (Control *c_control) {
-    //resetProtocol(c_control->send_msg);
     fillProtocol(c_control->send_msg, '1', "[CONOK]", FILEDATA.user_name);
     sendMsg(c_control);
 }
+/*
+ * This function is the one in charge of sending the information saying the connection wasn't succesfull.
+ */
 void conKOFunc (Control *c_control) {
-    //resetProtocol(c_control->send_msg);
     fillProtocol(c_control->send_msg, '1', "[CONKO]", "");
     sendMsg(c_control);
 }
+/*
+ * This function is the one in charge of printing the message received by the client.
+ * To do so it uses the \033 command in our printf function. We first move the cursor un row up with
+ * the \033[1A and then we move it 180 characters to the left with the input \033[180D. After that we print the
+ * user name and print the message received. After that we restore the cursor.
+ */
 void msgFunc (Control *c_control) {
-    //myprint("\0337");  // Saves cursor position and attributes
     myprint("\033[1A\033[180D\n\033[K");  // Move cursor 1 line up and 180 characters left and clear line
     myprint("[");
     myprint(c_control->name);
     myprint("]:");
-    write(1, c_control->rcv_msg->data, atoi(c_control->rcv_msg->length)); //print the message received
+    write(1, c_control->rcv_msg->data, myAtoi(c_control->rcv_msg->length,2)); //print the message received
     //myprint("\n\0338");  // Restore cursor from saved position and attributes
     myprint("\033[1B\033[180D\n");  // Move cursor 1 line down and 180 characters left and clear line
 
@@ -39,6 +56,10 @@ void msgFunc (Control *c_control) {
     write(1, FILEDATA.user_name, strlen(FILEDATA.user_name));
     write(1, ":", strlen (":"));
 }
+/*
+ * This function is the one in charge of showing the audios of the given user (the ones it has stored in the folder
+ * selected in the config file.
+ */
 void showAudiosFunc (Control *c_control) {
     DIR *d;
     struct dirent *dir;
@@ -78,10 +99,20 @@ void showAudiosFunc (Control *c_control) {
  * @param c_control
  * @param filedir
  * @return FALSE in case of failure, TRUE in success
- *//*
-int sendChcksum(Control *c_control){
-    return TRUE;
-}*/
+ */
+int sendChcksum(Control *c_control, char* filedir){
+    int success = TRUE;
+    char* checksum = get_md5sum(filedir);
+    if(checksum == NULL)
+        success = FALSE;
+    resetProtocol(c_control->send_msg);
+    fillProtocol(c_control->send_msg, '5', "[EOF]", checksum);
+    sendMsg(c_control);
+
+    free(checksum);
+
+    return success;
+}
 /**
  * Send a file in chunks of data to the client file descriptor inside c_control struct
  * @param c_control
@@ -89,54 +120,64 @@ int sendChcksum(Control *c_control){
  * @return FALSE in case of failure, TRUE in success
  **/
 int sendfile(Control *c_control, char* filename){
-    int error = 0;
+    ssize_t error = 0;
     char filedir[100];
-    printf("Sending0\n");
     sprintf(filedir, "./%s/%s", FILEDATA.audio_folder, filename);
-    myprint(filedir);
+
     int f_fd = open(filedir, O_RDONLY);
     if(f_fd < 0)
         return FALSE;
 
     char BUFFER[CHUNK_SIZE];
-    do{
+    while(1){ // Until end of file.
+        memset(BUFFER, 0, CHUNK_SIZE);
         error = read(f_fd, BUFFER, CHUNK_SIZE);
+        fflush(stdout);
+        if(error <= 0)
+            break;
+
         resetProtocol(c_control->send_msg);
-        printf("rst\n");
-        fillProtocol(c_control->send_msg, '5', "[AUDIO_RSPNS]", BUFFER);
-        printf("fill\n");
+        fillProtocoln(c_control->send_msg, '5', "[AUDIO_RSPNS]", BUFFER, error);
         sendMsg(c_control);
-    }while(error > 0); // Until end of file.
+    }
+    close(f_fd);
 
     if(error < 0)
         return FALSE;
 
-    // TODO
-    //sendChcksum(c_control);
+    if(sendChcksum(c_control, filedir) == FALSE)
+        return FALSE;
 
     return TRUE;
 }
+
+/*
+ * This function is the one in charge of requesting to the given user the audios
+ */
+
 void audioRqstFunc (Control *c_control) {
     int success = FALSE;
-    //success = sendfile(c_control, c_control->rcv_msg->data);
+    success = sendfile(c_control, c_control->rcv_msg->data);
     if (success == FALSE) {
         resetProtocol(c_control->send_msg);
         fillProtocol(c_control->send_msg, '5', "[AUDIO_KO]", "");
         sendMsg(c_control);
+    }else{
+        resetProtocol(c_control->send_msg);
+        fillProtocol(c_control->send_msg, '5', "[EOF]", "");
+        sendMsg(c_control);
     }
 }
-////////
-/* TODO: */
+
 /*
-void *broadcastFunc (Control *c_control) {
-
+ *It sends the given message to the users connected
+ */
+void broadcastFunc (Control *c_control) {
+    msgFunc(c_control);
 }
-
-void *audioRqstFunc (Control *c_control) {
-
-}
-*/
-////////
+/*
+ * This function is the one in charge of letting others know the connection was over (by changing the value of a "flag"
+ */
 void endConn (Control *c_control){
     c_control->end_conn = TRUE;
 }
@@ -145,7 +186,7 @@ int parseHeader (Protocol p) {
     //TODO: Complete all the options/commands here and also we have to take into account
     //      the id of the protocol (otherwise, we will have a conflict with CONOK)
 
-    char headers[][20] = {TR_NAME, CONOK, CONKO, MSG, SHOW_AUDIOS, AUDIO_RQST, EXIT_MSG};
+    char headers[][20] = {TR_NAME, CONOK, CONKO, MSG, SHOW_AUDIOS, BROADCAST, AUDIO_RQST, EXIT_MSG};
     int i=-1, length = sizeof(headers)/sizeof(headers[0]), found = FALSE;
 
     for(i = 0; i < length; i++) {
@@ -156,13 +197,20 @@ int parseHeader (Protocol p) {
 
     return i;
 }
-void sendMsg (Control *c_control) {
-    write (c_control->fd_client,&c_control->send_msg->id, 1);
-    write (c_control->fd_client,c_control->send_msg->header, strlen(c_control->send_msg->header));
-    write (c_control->fd_client,c_control->send_msg->length, strlen(c_control->send_msg->length));
-    write (c_control->fd_client,c_control->send_msg->data, strlen(c_control->send_msg->data));
 
+/*
+ * This function is in charge of sending the given message to the given user using the Control structure
+ */
+void sendMsg (Control *c_control) {
+    write (c_control->fd_client,&c_control->send_msg->id, sizeof(c_control->send_msg->id));
+    write (c_control->fd_client,c_control->send_msg->header, strlen(c_control->send_msg->header));
+    write (c_control->fd_client,c_control->send_msg->length, sizeof(c_control->send_msg->length));
+    write (c_control->fd_client,c_control->send_msg->data, myAtoi(c_control->send_msg->length,2));
 }
+
+/*
+ * Function used to free the memory used for the Control structures
+ */
 void freeControl(Control *_control){
     free(_control->name);
     free(_control->ip);
@@ -171,22 +219,23 @@ void freeControl(Control *_control){
 
     return;
 }
+//when server sends a message
 void getMsg(Control *control){
     int error = read(control->fd_client, &control->rcv_msg->id, 1); // reading id
     if(error < 1){
         control->end_conn = TRUE;
         return;
     }
-    char* asd_ = calloc(0, 0); // throwaway variable
+    char* asd_ = calloc(1, 1); // throwaway variable
     readUntil(control->fd_client, &asd_, '['); // reading '['
     //memset(control->rcv_msg->header,0,strlen(control->rcv_msg->header)); // empty-ing header
     readUntil(control->fd_client, &control->rcv_msg->header, ']'); // reading header
     read(control->fd_client, control->rcv_msg->length, 2); // reading length
 
-    int _length = atoi(control->rcv_msg->length);
+    int _length = myAtoi(control->rcv_msg->length,2);
     //memset(control->rcv_msg->data,0,strlen(control->rcv_msg->data)); // empty-ing data
     control->rcv_msg->data = realloc(control->rcv_msg->data, _length); // length bytes long (pretty obvious isn't it)
-    char *_data = malloc(_length);
+    char *_data = calloc(1, _length+1);
     read(control->fd_client, _data, _length);
     strcpy(control->rcv_msg->data, _data);
 
@@ -197,7 +246,7 @@ void getMsg(Control *control){
 //for creating the big server (main one)/listener
 void *openServer (void *_control) {
     Control *control = (Control*)_control;
-    int listenfd = -1, connfd = -1;
+    int connfd = -1;
     struct sockaddr_in serv_addr;
     char sendBuff[1025];
 
@@ -206,7 +255,7 @@ void *openServer (void *_control) {
      * This function takes domain/family as its first argument.
      * For Internet family of IPv4 addresses we use AF_INET
      */
-    listenfd = socket(AF_INET, SOCK_STREAM, 0);
+    control->fd_server = socket(AF_INET, SOCK_STREAM, 0);
     memset(&serv_addr, '0', sizeof(serv_addr));
     memset(sendBuff, '0', sizeof(sendBuff));
 
@@ -217,52 +266,46 @@ void *openServer (void *_control) {
     /* The call to the function "bind()" assigns the details specified
      * in the structure 'serv_addr' to the socket created in the step above
      */
-    bind(listenfd, (struct sockaddr*)&serv_addr, sizeof(serv_addr));
+    bind(control->fd_server, (struct sockaddr*)&serv_addr, sizeof(serv_addr));
 
     /* The call to the function "listen()" with second argument as 10 specifies
      * maximum number of client connections that server will queue for this listening
      * socket.
      */
-    if(listen(listenfd, 100) == -1) {
-        myprint("ERROR: listen error\n");
-        close(listenfd);
-        exit(EXIT_FAILURE);
+    if(listen(control->fd_server, 100) == -1) {
+        sleep(2);
+        if(listen(control->fd_server, 100) == -1) {
+            myprint("ERROR: listen error\n");
+            close(control->fd_server);
+            exit(EXIT_FAILURE);
+        }
     }
-    //pthread_t *thread_ids = calloc(0,0);
     int num_of_threads = 0, actual_thread = 0;
-/*
-    // setting a list of threads
-    // Fist, we create a null head, and we'll link the next threads to this head
-    node_t * head = NULL;
-    head = malloc(sizeof(node_t));
-    if (head == NULL) {
-        return 1;
-    }
-    head->data = NULL;
-    head->next = NULL;
-*/
+
     Control * child_ctrls = calloc (0,0);
     break_listener = FALSE;
+    sleep(1);
     while(break_listener == FALSE)
     {
         /* In the call to accept(), the server is put to sleep and when for an incoming
          * client request, the three way TCP handshake* is complete, the function accept()
          * wakes up and returns the socket descriptor representing the client socket.
          */
-        connfd = accept(listenfd, (struct sockaddr*)NULL, NULL);
-        if(break_listener == TRUE)
+        connfd = accept(control->fd_server, (struct sockaddr*)NULL, NULL);
+        if(break_listener == TRUE) {
             break;
+        }
         num_of_threads++;
-        //thread_ids = realloc(thread_ids, num_of_threads);
-        int connfd_aux = connfd; // client file descriptor
+
         // new child
         child_ctrls = realloc(child_ctrls, sizeof(Control)*num_of_threads);
         // Filling child settings
-        child_ctrls[actual_thread].fd_client = connfd_aux;
+        child_ctrls[actual_thread].fd_client = connfd;
         child_ctrls[actual_thread].port = control->port; // from parent
-        child_ctrls[actual_thread].ip = control->ip;     // from parent
+        child_ctrls[actual_thread].ip = calloc(1, strlen(control->ip)+1);     // from parent
+        strcpy(child_ctrls[actual_thread].ip, control->ip);
         child_ctrls[actual_thread].end_conn = FALSE;
-        child_ctrls[actual_thread].name = calloc(0,0);
+        child_ctrls[actual_thread].name = calloc(1,1);
 
         child_ctrls[actual_thread].rcv_msg = newProtocol();
         child_ctrls[actual_thread].send_msg = newProtocol();
@@ -274,40 +317,45 @@ void *openServer (void *_control) {
     }
     // Freeing memory:
     int i;
+
     for(i=0; i<num_of_threads; i++){
         pthread_kill(child_ctrls[i].th_id, SIGTERM);
+        child_ctrls[i].end_conn = TRUE;
+        close(child_ctrls[i].fd_client);
         sleep(2);
         pthread_join(child_ctrls[i].th_id, NULL);
-        /* TODO: instead of doing this, kill the child threads on parent (don't wait for global variables) and start
-         *      the closing routine here (sending the DC packet to the client
-         */
-        close(child_ctrls[i].fd_client);
+
         freeControl(&child_ctrls[i]);
-        //free(child_ctrls[i]);
     }
     free(child_ctrls);
 
     return NULL;
 }
+
 // this one is to create the small "servers"
 void * newConnection (void *_control) {
     Control *control = (Control*)_control;
 
-    void (*func_array[])(Control*) = {trNameFunc, conOKFunc, conKOFunc, msgFunc, showAudiosFunc, endConn};
+    void (*func_array[])(Control*) = {
+            trNameFunc,
+            conOKFunc,
+            conKOFunc,
+            msgFunc,
+            showAudiosFunc,
+            broadcastFunc,
+            audioRqstFunc,
+            endConn
+    };
 
     while(break_listener == FALSE) {
         getMsg(control);
         if(control->end_conn == TRUE){
-            // TODO: start server-client disconnection routine (?
-            /*   fillProtocol(control->send_msg, '6', "[CONOK]", "0", " ");
-               myprint("fce1\n");
-               sendMsg(control);
-               myprint("fce1\n");*/
+         
             return NULL;
         }
         int option = parseHeader(*(control->rcv_msg));
         if(option >= 0){
-            if(option > 6){
+            if(option > 7){
                 myprint("ERROR: Wrong command/input\n");
                 continue;
             }

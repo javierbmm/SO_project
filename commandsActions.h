@@ -7,11 +7,11 @@
 #include <unistd.h>
 #include <string.h>
 #include <stdio.h>
-#include <sys/wait.h>
 #include "types.h"
 
-int conn_fd;
+int  conn_fd;
 char *conn_username;
+int num_conn;
 
 void closeConn();
 void getCommand(int i, char* user);

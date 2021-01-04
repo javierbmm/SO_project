@@ -16,6 +16,7 @@
 #include <arpa/inet.h>
 #include <pthread.h>
 #include <protocol.h>
+#include <sys/wait.h>
 
 #define SHOWCONNECTIONS_ID "0"
 #define CONNECT_ID "1"
@@ -69,7 +70,7 @@ typedef struct  {
 FileData FILEDATA;
 
 typedef struct {    //TODO
-    int fd_child;  // file descriptor for the child-thread /*TODO: CHECK THIS*/
+    int fd_server;  // file descriptor for the current server /*TODO: CHECK THIS*/
     int port;           // port assigned to the listener
     Protocol * rcv_msg;     // message received
     Protocol * send_msg;// message to send | sent message

@@ -5,24 +5,36 @@
 #include <commandsActions.h>
 #include <fileManager.h>
 
+
+/**
+ * This function is in charge of closing the socket when closing the server
+ */
 void handle_sigpipe(){
     closeConn();
 }
-
+/**
+ * This function closes the connections of the sockets
+ */
 void closeConn(){
     close(conn_fd);
     conn_fd = 0;
 }
+/*
+ * It send the information to the given file descriptor
+ */
 int sendtofd(Protocol p, int fd){
     int error = 0;
 
     error += write (fd, &p.id, 1);
     error += write (fd, p.header, strlen(p.header));
     error += write (fd, p.length, 2);
-    error += write (fd, p.data, strlen(p.data));
+    error += write (fd, p.data, atoi(p.length));
+
     return error;
 }
-
+/*
+ * We create the connection between the current one and the given port
+ */
 int connectPort(int port){
     int sockfd = 0;
     struct sockaddr_in serv_addr;
@@ -59,27 +71,33 @@ int connectPort(int port){
 
     return 1;
 }
-
+/*
+ * This function reads the message and stores its information
+ */
 Protocol* readMsg(){
     Protocol *p = newProtocol();
-    char * _ = calloc(0,0);             //throwable
-    if(read(conn_fd, &p->id, 1) < 1 )   // reading id
+    char * _ = calloc(1,1);             //throwable
+
+    if(read(conn_fd, &p->id, sizeof(p->id)) < 1 )   // reading id
         return NULL;
 
-    readUntil(conn_fd, &_, '[');        // reading '['
-    readUntil(conn_fd, &p->header, ']'); // reading header
-    read(conn_fd, p->length, 2);        // reading length
-    int _length = atoi(p->length);
+    readOnlyUntil(conn_fd, &_, '[');        // reading '['
+    readOnlyUntil(conn_fd, &p->header, ']'); // reading header
+    read(conn_fd, &p->length[0], sizeof(p->length));        // reading length
+
+    int _length = myAtoi(p->length,2);
     p->data = realloc(p->data, _length); // length bytes long (pretty obvious isn't it)
-    char *_data = malloc(_length);
-    read(conn_fd, _data, _length);
-    strcpy(p->data, _data);
+    memset(p->data, 0, _length+1);
+    read(conn_fd, p->data, _length);
 
     free(_);
 
     return p;
 }
-
+/*
+ * By executing the show connections script it checks the possible connections we could have and returns the value
+ * and ports
+ */
 void show_connections(){
     pid_t child_pid;
     int fd[2];
@@ -102,14 +120,14 @@ void show_connections(){
         // parent process because return value non-zero.
     }else{
         wait(NULL);
-        char **ports_arr = malloc(sizeof(char**) * 1);
-        ports_arr[0] = malloc(sizeof(char*) * 1);
+        char **ports_arr = calloc(1, sizeof(char**));
+        ports_arr[0] = calloc(1, sizeof(char*));
         int i = 0;
         char _[1]; // throwable variable
         while(readUntil(fd[0], &ports_arr[i], '\n') > 0) {
             i++;
             ports_arr = realloc(ports_arr, sizeof(char*) * (i+1));
-            ports_arr[i] = malloc(sizeof(char*) * 1);
+            ports_arr[i] = calloc(1, sizeof(char*));
             //skipDelimiter(fd[0], '\n');
             read(fd[0], _, 1);  // reading that '\n' since skipDelimiter doesn't work because it uses lseek function
                                 // which doesn't work with pipes.
@@ -137,13 +155,15 @@ void show_connections(){
 }
 // Get the command and process it
 void getCommand(int i, char * user) {
-    int j = 0, lenUsername = 0, lenText = 0;
+    int j = 0, lenUsername = 0, lenText = 0, bytesSent = 0, bytesToSend = 0;
     //char aux[BUFF_SIZE], text[BUFF_SIZE],  port_s[BUFF_SIZE], user2[BUFF_SIZE], audio[BUFF_SIZE];
-    char *user2, *audio, *text, *audio_name;
-    user2 = calloc(0,0);
-    audio = malloc(0);
-    text = malloc(0);
+    char *user2, *audio, *text, *audio_name, buffer[100] = {0};
+    user2 = calloc(1, 1);
+    audio = calloc(1, 1);
+    text = calloc(1, 1);
+    audio_name = calloc(1,1);
     Protocol * client_protocol, *server_protocol;
+   // u_connected = malloc (0,0);
     // int port; ??
     switch (i) {
         case 0: // SHOW CONNECTIONS
@@ -179,13 +199,13 @@ void getCommand(int i, char * user) {
             sendtofd(*p, conn_fd);
             sleep(0.2);
             server_protocol = readMsg();
-
+           // if (server_protocol.port == )
             if(server_protocol == NULL) {
                 write(1, COULDNTCONNECT, strlen(COULDNTCONNECT));
                 closeConn();
                 break;
             }
-            conn_username = realloc(conn_username, strlen(server_protocol->data));
+            conn_username = realloc(conn_username, strlen(server_protocol->data)+1);
             strcpy(conn_username, server_protocol->data);
             char connectedMsg[100];
             sprintf(connectedMsg, "%s connected: %s\n", user2, conn_username);
@@ -211,33 +231,64 @@ void getCommand(int i, char * user) {
                 break;
             }
             free(_);
-            text = realloc(text, lenText + 1);
-            text[lenText] = '\0';
-            fillProtocol(client_protocol, '2', "[MSG]", text);
-            if(sendtofd(*client_protocol, conn_fd) < 0 || conn_fd <= 0)
-                myprint(COULDNTSEND);
+            text = realloc(text, ++lenText);
+            text[lenText-1] = '\0';
+
+            while(bytesSent < lenText) {
+                bytesToSend = lenText - bytesSent;
+                // (bytesSent == 0? 0: bytesSent-1) => checking init of bytesSent
+                fillProtocol(client_protocol, '2', "[MSG]", &text[bytesSent]);
+                if (sendtofd(*client_protocol, conn_fd) < 0 || conn_fd <= 0) {
+                    myprint(COULDNTSEND);
+                    break;
+                }
+
+                if(bytesToSend > 99){ // maximum size of buffer (2 digits of length = 99 characters)
+                    bytesSent += 99;
+                }else{
+                    bytesSent = lenText;
+                }
+            }
 
             freeProtocol(client_protocol);
             break;
-       /* case 3:
-            j = strlen(BROADCAST);
-            while (user[j] != '"') {
-                j++;
+        case 3:
+            j = strlen(BROADCAST) + 1;
+            char *aux_ = calloc(1,1);
+            j += sreadUntil(&(user[j]), &aux_, '"'); //we're reading the trash until the first character of the text
+            if(user[lenUsername+2] != ' '){
+                lenText = sreadUntil(&(user[j]), &text, '"'); //we're text
+            }else{
+                write(1, "error1\n", strlen("error\n"));
+                break;
             }
-            k = 0;
-            while (user[j] != '"') {
-                text[k] = user[j];
-                j++;
-                k++;
-            }
-            text[k] = '\0';
-            write(1, NOCONNECTIONS, strlen(NOCONNECTIONS));
+            free(aux_);
+            client_protocol = newProtocol();
+            //text = realloc(text, ++lenText);
+            //text[lenText-1] = '\0';
+          //  for (int i = 0; i< num_conn; i++) {
 
-            break;*/
+            while (bytesSent < lenText) {
+                    bytesToSend = lenText - bytesSent;
+                    fillProtocol(client_protocol, '1', "[MSG]", &text[bytesSent]);
+                    if (sendtofd(*client_protocol, conn_fd) < 0 || conn_fd <= 0) {
+                        myprint(COULDNTSEND);
+                        break;
+                    }
+
+                    if (bytesToSend > 99) { // maximum size of buffer (2 digits of length = 99 characters)
+                        bytesSent += 99;
+                    } else {
+                        bytesSent = lenText;
+                    }
+                }
+           // }
+
+            freeProtocol(client_protocol);
+            break;
         case 4: // SHOWAUDIOS
             client_protocol = newProtocol();
             fillProtocol(client_protocol, '4', "[SHOW_AUDIOS]", " ");
-            audio_name = malloc(0);
 
             if(sendtofd(*client_protocol, conn_fd) < 0 || conn_fd <= 0)
                 myprint(COULDNTSEND);
@@ -261,50 +312,81 @@ void getCommand(int i, char * user) {
 
             break;
         case 5:
-            printf("Download\n");
             j = strlen(DOWNLOAD) + 1;
-            //printf()
             if (user[j-1] == ' ')
                 lenUsername = sreadUntil(&user[j], &user2, ' ');
             else
                 break;
-            printf("here\n");
-            audio_name = malloc(0);
+            audio_name =  calloc(1, 1);
             if(lenUsername > 0 && user[lenUsername+2] != ' '){
                 sreadUntil2(&(user[j+lenUsername]), &audio_name, ' ', '\0');
             }else{
                 write(1, "error\n", strlen("error\n"));
             }
-            printf("here2\n");
-            audio_name[strlen(audio_name)-1] = 0;
-            printf("audio_name: %s\n",audio_name);
+            //audio_name[strlen(audio_name)-1] = 0;
             client_protocol = newProtocol();
             fillProtocol(client_protocol, '5', "[AUDIO_RQST]", audio_name);
             sendtofd(*client_protocol, conn_fd);
 
             int file_fd = open(audio_name, O_CREAT | O_WRONLY |  O_TRUNC, S_IRWXU);
 
+            fflush(stdout);
+            int i = 0;
             while(1) {
+                i++;
                 server_protocol = readMsg();
-                if(strcasecmp(server_protocol->header, "[EOF]") == 0)
+                if(strcasecmp(server_protocol->header, "EOF") == 0){
+                    close(file_fd);
+                    memset(buffer,0, sizeof(buffer));
+                    // Checking file integrity with md5sum keys
+                    if( check_md5sum(server_protocol->data, audio_name) == FALSE) { // file ok
+                        sprintf(buffer, "[%s] %s downloaded\n", conn_username, audio_name);
+                        myprint(buffer);
+                    }else{  // file corrupted
+                        sprintf(buffer, "[%s] %s error. Try again\n", conn_username, audio_name);
+                        myprint(buffer);
+                    }
                     break;
-                else if(strcasecmp(server_protocol->header, "[AUDIO_KO]") == 0){
+                }
+                else if(strcasecmp(server_protocol->header, "AUDIO_KO") == 0){
+                    close(file_fd);
+                    remove(audio_name);
                     myprint("ERROR: Wrong audio name\n");
                     break;
                 }
-                printProtocol(*server_protocol);
-                write(file_fd, server_protocol->data, atoi(server_protocol->length));
-                resetProtocol(server_protocol);
+                write(file_fd, server_protocol->data, myAtoi(server_protocol->length, 2));
+                // This code is only for testing purposes. Please do not erase it.
+                /*if(CHUNK_SIZE != written) {
+                    myprint("this <");
+                    myprint(server_protocol->length);
+                    myprint(">|<");
+                    myprint(myAtoi(server_protocol->length, 2));
+                    myprint("> should be ");
+                    myprint(CHUNK_SIZE);
+                    myprint("\n");
+                    myprint("In line ");
+                    myprint(i);
+                    myprint(": ");
+
+                    fflush(stdout);
+                    printProtocol(*server_protocol);
+                }*/
+                freeProtocol(server_protocol);
             }
-            close(file_fd);
-            printf("Done\n");
+
             freeProtocol(client_protocol);
             freeProtocol(server_protocol);
-            free(audio_name);
 
             break;
     }
+
+    memset(audio, 0, strlen(audio));
+    memset(text, 0, strlen(text));
+    memset(user2, 0, strlen(user2));
+    memset(audio_name, 0, strlen(audio_name));
     free(audio);
     free(user2);
     free(text);
+    free(audio_name);
+
 }
